@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LoveLeeVa</title>
+    <script>
+      // Redirect 404s to index.html so React Router can handle client-side routes.
+      // Use one path segment for GitHub project pages and zero for custom domains.
+      (function () {
+        var l = window.location
+        var segmentCount = l.pathname.startsWith('/lovelee/') ? 1 : 0
+        var path = l.pathname
+          .split('/')
+          .slice(1 + segmentCount)
+          .join('/')
+          .replace(/&/g, '~and~')
+
+        var query = l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : ''
+
+        l.replace(
+          l.protocol +
+            '//' +
+            l.hostname +
+            (l.port ? ':' + l.port : '') +
+            l.pathname.split('/').slice(0, 1 + segmentCount).join('/') +
+            '/?/' +
+            path +
+            query +
+            l.hash,
+        )
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>
