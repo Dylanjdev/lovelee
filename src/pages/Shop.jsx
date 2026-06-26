@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import rollingTrayHomepage from '../assets/RollingTrayHomepage.png'
 import wallArtHomepage from '../assets/wallArtHomepage.webp'
+import walnutBoard from '../assets/maple/walnut.png'
 
 export default function Shop() {
   const [activeImageProduct, setActiveImageProduct] = useState(null)
@@ -29,6 +30,16 @@ export default function Shop() {
       description: 'Tell us what you need and we will build a one-of-a-kind piece.',
       tileClassName: 'product-card__img--3',
       image: null,
+    },
+    {
+      id: 'maple-walnut-board',
+      title: 'Maple and Walnut Board',
+      description:
+        'Cutting board, charcuterie board, lapboard, and display board handcrafted from maple and walnut.',
+      tileClassName: 'product-card__img--maple-walnut',
+      image: walnutBoard,
+      price: '$75',
+      details: 'Maple + Walnut',
     },
     {
       id: 'wall-art',
@@ -107,8 +118,11 @@ export default function Shop() {
                 <div className="product-card__body">
                   <h3 className="product-card__title">{product.title}</h3>
                   <p className="product-card__desc">{product.description}</p>
+                  {product.details ? (
+                    <p className="product-card__details">{product.details}</p>
+                  ) : null}
                   {/* Shopify buy button goes here */}
-                  <span className="product-card__soon">View More</span>
+                  <span className="product-card__soon">{product.price ?? 'View More'}</span>
                 </div>
               </article>
             ))}
