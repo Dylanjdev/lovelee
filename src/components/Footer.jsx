@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import logoImg from '../assets/OurLoveLeeLogoGray.png'
+import logoImg from '../assets/OurLoveLeeLogoGray.webp'
 
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="18" height="18">
@@ -28,12 +28,20 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer__top">
         <div className="footer__brand">
-          <img src={logoImg} alt="LoveLeeVa" className="footer__logo" />
+          <img
+            src={logoImg}
+            alt="LoveLeeVa"
+            className="footer__logo"
+            width="586"
+            height="426"
+            loading="lazy"
+            decoding="async"
+          />
           <p className="footer__tagline">Handcrafted in Jonesville, Virginia</p>
           <div className="social-links">
-            <a href="https://www.facebook.com/loveleecounty" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><FacebookIcon /></a>
-            <a href="https://www.instagram.com/loveleeva/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><InstagramIcon /></a>
-            <a href="https://www.linkedin.com/company/105233053/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><LinkedInIcon /></a>
+            <a href="https://www.facebook.com/loveleecounty" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on Facebook (opens in a new tab)"><FacebookIcon /></a>
+            <a href="https://www.instagram.com/loveleeva/" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on Instagram (opens in a new tab)"><InstagramIcon /></a>
+            <a href="https://www.linkedin.com/company/105233053/" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on LinkedIn (opens in a new tab)"><LinkedInIcon /></a>
           </div>
         </div>
         <nav className="footer__nav" aria-label="Footer navigation">
@@ -42,6 +50,7 @@ export default function Footer() {
             <li><Link to="/">Home</Link></li>
             <li><Link to="/about">About Us</Link></li>
             <li><Link to="/shop">Shop</Link></li>
+            <li><Link to="/directory">Business Directory</Link></li>
             <li><Link to="/contact">Contact Us</Link></li>
             <li><Link to="/customized">Customized</Link></li>
           </ul>
@@ -54,10 +63,21 @@ export default function Footer() {
         </div>
       </div>
       <div className="footer__bottom">
-        <p className="footer__copy">&copy; 2026 LoveLeeVa &mdash; All Rights Reserved</p>
+        <div className="footer__legal">
+          <p className="footer__copy">&copy; 2026 LoveLeeVa &mdash; All Rights Reserved</p>
+          <a
+            className="footer__credit"
+            href="https://smithdigitals.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Built by Smith Digitals (opens in a new tab)"
+          >
+            Built by Smith Digitals
+          </a>
+        </div>
         <div className="footer__links">
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms &amp; Conditions</a>
+          <Link to="/privacy-policy">Privacy Policy</Link>
+          <Link to="/terms">Terms of Service</Link>
         </div>
       </div>
     </footer>

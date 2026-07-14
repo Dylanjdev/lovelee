@@ -1,95 +1,276 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import logoImg from '../assets/OurLoveLeeLogoGray.png'
-import rollingTrayHomepage from '../assets/RollingTrayHomepage.png'
+import logoImg from '../assets/OurLoveLeeLogoGray.webp'
+import rollingTrayHomepage from '../assets/RollingTrayHomepage.webp'
+import wallArtHomepage from '../assets/wallArtHomepage.webp'
 
-const MARQUEE_TEXT = 'Handcrafted \u00a0\u2022\u00a0 Heirloom Quality \u00a0\u2022\u00a0 Made in Virginia \u00a0\u2022\u00a0 Built to Last \u00a0\u2022\u00a0 '
+const pillars = [
+  {
+    title: 'Grow Your Own Goods',
+    label: 'Homestead goods',
+    description:
+      'Homestead goods, handmade products, luffa, woodworking, crochet, local art, and rural Virginia products made with care and rooted in place.',
+    link: '/shop',
+    cta: 'Shop goods',
+    icon: 'goods',
+  },
+  {
+    title: 'Grow Your Own Power',
+    label: 'Rural infrastructure',
+    description:
+      'Power farming, engineering, and rural infrastructure designed to help communities become more resilient, self-reliant, and energy-aware.',
+    link: '/about',
+    cta: 'See the mission',
+    icon: 'power',
+  },
+  {
+    title: 'Grow Your Own Talent',
+    label: 'Workforce pathways',
+    description:
+      'Technical mentorship, VoTech partnerships, Open Source Oasis, and hands-on learning pathways designed to help future unicorns grow right here at home.',
+    link: '/contact',
+    cta: 'Build with us',
+    icon: 'talent',
+  },
+  {
+    title: 'Grow Your Own Adventure',
+    label: 'Local discovery',
+    description:
+      'Local experiences, tourism, events, and Appalachian discovery designed to keep talent, stories, and tourism dollars close to home.',
+    link: '/contact',
+    cta: 'Explore the idea',
+    icon: 'adventure',
+  },
+]
+
+const Icon = ({ name }) => {
+  if (name === 'power') {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M25 4 12 27h11l-2 17 15-25H25z" />
+      </svg>
+    )
+  }
+
+  if (name === 'talent') {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M9 33c8-8 22-8 30 0" />
+        <path d="M14 20h20v14H14z" />
+        <path d="M19 15h10l5 5H14z" />
+      </svg>
+    )
+  }
+
+  if (name === 'adventure') {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M7 34c9-15 16-21 34-25-4 18-10 25-25 34l-3-6z" />
+        <path d="m26 16 6 6" />
+        <path d="M9 39c4-1 7-2 10-5" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M24 40V18" />
+      <path d="M24 20c-9-1-13-6-14-13 8 1 13 5 14 13z" />
+      <path d="M25 25c9-1 13-6 14-13-8 1-13 5-14 13z" />
+      <path d="M13 40h22" />
+    </svg>
+  )
+}
 
 export default function Home() {
+  useEffect(() => {
+    const revealTargets = document.querySelectorAll('[data-reveal]')
+
+    if (
+      !window.IntersectionObserver
+      || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      revealTargets.forEach((target) => target.classList.add('is-visible'))
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.18 },
+    )
+
+    revealTargets.forEach((target) => observer.observe(target))
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <>
-      {/* ── HERO ──────────────────────────────────── */}
-      <section className="hero" aria-label="Hero">
-        <div className="hero__noise" aria-hidden="true" />
-        <div className="hero__content">
-          <div className="hero__logo-wrap">
-            <img src={logoImg} alt="LoveLeeVa" className="hero__logo" />
+      <section className="hero" aria-label="LoveLeeVa introduction">
+        <div className="hero__map" aria-hidden="true" />
+        <div className="hero__inner">
+          <div className="hero__content">
+            <img
+              src={logoImg}
+              alt="LoveLeeVa"
+              className="hero__logo"
+              width="586"
+              height="426"
+              decoding="async"
+              fetchPriority="high"
+            />
+            <p className="hero__eyebrow">We Grow Our Own</p>
+            <h1 className="hero__headline">LoveLeeVa: Sustainable Rural Development</h1>
+            <p className="hero__sub">
+              Growing local goods, local power, local talent, and local adventure in Lee
+              County, Virginia.
+            </p>
+            <div className="hero__ctas">
+              <Link to="/shop" className="btn btn--primary">Shop Local Goods</Link>
+              <Link to="/about" className="btn btn--ghost">Explore the Mission</Link>
+              <Link to="/contact" className="btn btn--copper">Grow Your Own Adventure</Link>
+            </div>
           </div>
-          <p className="hero__eyebrow">Handcrafted in Virginia</p>
-          <h1 className="hero__headline">
-            Boards for<br />Every Occasion
-          </h1>
-          <p className="hero__sub">
-            Premium hardwood cutting boards and custom rolling trays —
-            built to last, crafted with love.
-          </p>
-          <div className="hero__ctas">
-            <Link to="/shop" className="btn btn--primary">Shop Now</Link>
-            <Link to="/about" className="btn btn--ghost">Our Story</Link>
+          <div className="hero__system" aria-label="LoveLeeVa growth pillars">
+            <div className="system-card system-card--center">
+              <span>Built in Lee County</span>
+              <strong>We Grow Our Own</strong>
+            </div>
+            {pillars.map((pillar) => (
+              <div className="system-card" key={pillar.title}>
+                <Icon name={pillar.icon} />
+                <span>{pillar.title.replace('Grow Your Own ', '')}</span>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="hero__scroll-hint" aria-hidden="true">↓</div>
       </section>
 
-      {/* ── MARQUEE BANNER ────────────────────────── */}
-      <div className="marquee" aria-hidden="true">
-        <div className="marquee__track">
-          {[...Array(6)].map((_, i) => (
-            <span key={i} className="marquee__text">{MARQUEE_TEXT}</span>
-          ))}
-        </div>
-      </div>
-
-      {/* ── HOME PREVIEW CARDS ────────────────────── */}
-      <section className="home-preview">
-        <div className="home-preview__inner">
-          <p className="section-label">What We Make</p>
-          <h2 className="section-heading">Crafted for Real Life</h2>
-          <p className="home-preview__sub">
-            These are featured favorites. We carry more than just these categories,
-            including Loofas, Soft Items, Wall Art, and custom work.
-          </p>
-          <div className="home-preview__cta-wrap">
-            <Link to="/shop" className="btn btn--ghost">See Full Shop</Link>
+      <section className="pillars section-band" id="pillars" data-reveal>
+        <div className="section-inner">
+          <div className="section-intro" data-reveal>
+            <p className="section-label">Four Pillars</p>
+            <h2 className="section-heading">A local ecosystem designed for growth.</h2>
+            <p className="section-copy">
+              LoveLeeVa is more than a storefront. It is an architecture for rural
+              development, connecting handmade goods, practical infrastructure, local
+              learning pathways, and visitor discovery.
+            </p>
           </div>
-          <div className="home-preview__grid">
-            <Link to="/shop" className="preview-card preview-card--1">
-              <div className="preview-card__overlay">
-                <h3>Cutting Boards</h3>
-                <span className="preview-card__cta">Shop Now →</span>
-              </div>
+          <div className="pillars__grid">
+            {pillars.map((pillar) => (
+              <article className="pillar-card" key={pillar.title} data-reveal>
+                <div className="pillar-card__top">
+                  <span className="pillar-card__icon"><Icon name={pillar.icon} /></span>
+                  <span className="pillar-card__label">{pillar.label}</span>
+                </div>
+                <h3>{pillar.title}</h3>
+                <p>{pillar.description}</p>
+                <Link to={pillar.link}>{pillar.cta}</Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="goods-section" data-reveal>
+        <div className="goods-section__inner">
+          <div className="goods-section__content" data-reveal>
+            <p className="section-label">Shop / Products</p>
+            <h2 className="section-heading">Homestead goods with a maker's hand.</h2>
+            <p className="section-copy">
+              Luffa products, woodworking, crochet, handmade goods, local artist items,
+              and seasonal rural products can all live under one LoveLeeVa roof.
+            </p>
+            <Link to="/shop" className="btn btn--primary">Shop LoveLeeVa Goods</Link>
+          </div>
+          <div className="goods-grid" aria-label="Featured product areas">
+            <Link
+              to="/shop"
+              className="goods-tile goods-tile--photo"
+              data-reveal
+            >
+              <img
+                src={rollingTrayHomepage}
+                alt=""
+                className="goods-tile__image"
+                width="433"
+                height="577"
+                loading="lazy"
+                decoding="async"
+              />
+              <span>Woodworking</span>
             </Link>
             <Link
               to="/shop"
-              className="preview-card preview-card--2"
-              style={{
-                backgroundImage: `url(${rollingTrayHomepage})`,
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: 'cover',
-              }}
+              className="goods-tile goods-tile--photo"
+              data-reveal
             >
-              <div className="preview-card__overlay">
-                <h3>Rolling Trays</h3>
-                <span className="preview-card__cta">Shop Now →</span>
-              </div>
+              <img
+                src={wallArtHomepage}
+                alt=""
+                className="goods-tile__image"
+                width="1600"
+                height="1200"
+                loading="lazy"
+                decoding="async"
+              />
+              <span>Local Art</span>
             </Link>
-            <Link to="/customized" className="preview-card preview-card--3">
-              <div className="preview-card__overlay">
-                <h3>Custom Orders</h3>
-                <span className="preview-card__cta">Start Here →</span>
-              </div>
+            <Link to="/shop" className="goods-tile goods-tile--texture" data-reveal>
+              <span>Luffa + Handmade Goods</span>
+            </Link>
+            <Link to="/customized" className="goods-tile goods-tile--craft" data-reveal>
+              <span>Custom Rural Products</span>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── TAGLINE STRIP ─────────────────────────── */}
-      <section className="tagline-strip">
-        <div className="tagline-strip__inner">
-          <p className="tagline-strip__text">
-            &ldquo;Every piece tells a story. Make yours worth telling.&rdquo;
+      <section className="mission-section section-band" data-reveal>
+        <div className="mission-section__inner" data-reveal>
+          <p className="section-label">Mission</p>
+          <h2>We Grow Our Own.</h2>
+          <p>
+            LoveLeeVa is a sustainable rural development platform rooted in local
+            products, local infrastructure, local workforce development, and local
+            experiences. The foundation is simple: build useful systems at home, keep
+            opportunity close, and let Lee County's makers, students, small businesses,
+            and visitors see themselves in the same story.
           </p>
-          <Link to="/customized" className="btn btn--primary">Get a Custom Piece</Link>
+        </div>
+      </section>
+
+      <section className="community-section" data-reveal>
+        <div className="section-inner community-section__inner">
+          <div data-reveal>
+            <p className="section-label">Local Visibility</p>
+            <h2 className="section-heading">Better discovery means stronger local revenue.</h2>
+          </div>
+          <div className="community-list">
+            <p data-reveal>Local maker features and small business storytelling</p>
+            <p data-reveal>Chamber work, small businesses, restaurants, and events visibility</p>
+            <p data-reveal>Tourism ideas that keep stories and spending close to home</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="collaborate-section" data-reveal>
+        <div className="collaborate-section__inner" data-reveal>
+          <p className="section-label">Contact / Collaborate</p>
+          <h2>Want to collaborate, be featured, sell goods, or join the mission?</h2>
+          <div className="collaborate-section__actions">
+            <Link to="/contact" className="btn btn--primary">Contact LoveLeeVa</Link>
+            <Link to="/contact" className="btn btn--ghost">Feature My Business</Link>
+            <Link to="/contact" className="btn btn--copper">Join the Local Maker Network</Link>
+          </div>
         </div>
       </section>
     </>

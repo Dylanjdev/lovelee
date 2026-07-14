@@ -46,7 +46,11 @@ export default function Customized() {
         <div className="custom-form-section__inner">
           <p className="section-label">Start Your Order</p>
           <h2 className="section-heading">Custom Order Request</h2>
-          <form className="custom-form" onSubmit={e => e.preventDefault()}>
+          <form
+            className="custom-form"
+            action="https://formspree.io/f/xkoldyoo"
+            method="POST"
+          >
             <div className="custom-form__row">
               <div className="contact-form__field">
                 <label htmlFor="c-name">Name</label>
@@ -85,6 +89,11 @@ export default function Customized() {
               <textarea id="c-details" name="details" rows="5" placeholder="Size, quantity, deadline, occasion, anything else we should know…" required />
             </div>
             <button type="submit" className="btn btn--primary">Submit Request</button>
+            <p className="form-privacy-note">
+              Submitting this form is a request, not an accepted order. See our{' '}
+              <Link to="/privacy-policy">Privacy Policy</Link> and{' '}
+              <Link to="/terms">Terms of Service</Link>.
+            </p>
           </form>
         </div>
       </section>

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="24" height="24">
     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
@@ -52,7 +54,11 @@ export default function Contact() {
           <div className="contact__social">
             <p className="section-label">Send a Message</p>
             <h2 className="section-heading">We&rsquo;d Love to Hear From You</h2>
-            <form className="contact-form" onSubmit={e => e.preventDefault()}>
+            <form
+              className="contact-form"
+              action="https://formspree.io/f/xkoldyoo"
+              method="POST"
+            >
               <div className="contact-form__field">
                 <label htmlFor="cf-name">Name</label>
                 <input id="cf-name" type="text" name="name" autoComplete="name" required />
@@ -66,17 +72,21 @@ export default function Contact() {
                 <textarea id="cf-message" name="message" rows="5" required />
               </div>
               <button type="submit" className="btn btn--primary">Send Message</button>
+              <p className="form-privacy-note">
+                By submitting this form, you acknowledge our{' '}
+                <Link to="/privacy-policy">Privacy Policy</Link>.
+              </p>
             </form>
             <div className="contact__social-links">
               <p className="section-label" style={{marginTop: '2.5rem'}}>Follow Along</p>
               <div className="social-links">
-                <a href="https://www.facebook.com/loveleecounty" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <a href="https://www.facebook.com/loveleecounty" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on Facebook (opens in a new tab)">
                   <FacebookIcon />
                 </a>
-                <a href="https://www.instagram.com/loveleeva/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <a href="https://www.instagram.com/loveleeva/" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on Instagram (opens in a new tab)">
                   <InstagramIcon />
                 </a>
-                <a href="https://www.linkedin.com/company/105233053/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                <a href="https://www.linkedin.com/company/105233053/" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on LinkedIn (opens in a new tab)">
                   <LinkedInIcon />
                 </a>
               </div>

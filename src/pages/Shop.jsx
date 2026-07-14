@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import rollingTrayHomepage from '../assets/RollingTrayHomepage.png'
+import rollingTrayHomepage from '../assets/RollingTrayHomepage.webp'
 import wallArtHomepage from '../assets/wallArtHomepage.webp'
-import walnutBoard from '../assets/maple/walnut.png'
+import walnutBoard from '../assets/walnut.webp'
 
 export default function Shop() {
   const [activeImageProduct, setActiveImageProduct] = useState(null)
+  const imageCloseButtonRef = useRef(null)
+  const imageTriggerRef = useRef(null)
 
   const products = [
     {
@@ -23,6 +25,8 @@ export default function Shop() {
         'Custom engraved, one-of-a-kind pieces. Smooth finish, deep grain.',
       tileClassName: 'product-card__img--2',
       image: rollingTrayHomepage,
+      imageWidth: 433,
+      imageHeight: 577,
     },
     {
       id: 'custom-orders',
@@ -38,6 +42,8 @@ export default function Shop() {
         'Cutting board, charcuterie board, lapboard, and display board handcrafted from maple and walnut.',
       tileClassName: 'product-card__img--maple-walnut',
       image: walnutBoard,
+      imageWidth: 433,
+      imageHeight: 577,
       price: '$75',
       details: 'Maple + Walnut',
     },
@@ -48,21 +54,26 @@ export default function Shop() {
         'Decorative hardwood pieces to bring warmth to any room.',
       tileClassName: 'product-card__img--wall-art',
       image: wallArtHomepage,
+      imageWidth: 1600,
+      imageHeight: 1200,
     },
   ]
 
   useEffect(() => {
-    if (!activeImageProduct) {
-      document.body.style.overflow = ''
-      return undefined
-    }
+    if (!activeImageProduct) return undefined
 
     const previousOverflow = document.body.style.overflow
+    const imageTrigger = imageTriggerRef.current
     document.body.style.overflow = 'hidden'
+    imageCloseButtonRef.current?.focus()
 
     const handleEsc = (event) => {
       if (event.key === 'Escape') {
         setActiveImageProduct(null)
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault()
+        imageCloseButtonRef.current?.focus()
       }
     }
 
@@ -70,6 +81,7 @@ export default function Shop() {
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleEsc)
+      imageTrigger?.focus()
     }
   }, [activeImageProduct])
 
@@ -87,32 +99,46 @@ export default function Shop() {
         <div className="shop__inner">
           <p className="section-label">Featured Collection</p>
           <h2 className="section-heading">Our Products</h2>
-          <p className="shop__sub">Shopify buy buttons coming soon — check back shortly.</p>
+          <div className="shop-status" role="note" aria-labelledby="shop-status-title">
+            <p className="shop-status__label">Under Construction</p>
+            <div>
+              <h3 className="shop-status__title" id="shop-status-title">Our Unicorns Are Working Their Magic</h3>
+              <p className="shop-status__message">
+                Unicorns are working their magic to get the online shop and cart
+                functional as quickly as possible.
+              </p>
+            </div>
+          </div>
           <div className="shop__grid">
             {products.map((product) => (
               <article className="product-card" key={product.id}>
                 <div
                   className={`product-card__img ${product.tileClassName} ${product.image ? 'product-card__img--interactive' : ''}`}
-                  style={
-                    product.image
-                      ? {
-                          backgroundImage: `url(${product.image})`,
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundSize: 'cover',
-                        }
-                      : undefined
-                  }
-                  aria-hidden="true"
+                  aria-hidden={product.image ? undefined : true}
                 >
                   {product.image ? (
-                    <button
-                      type="button"
-                      className="product-card__zoom"
-                      onClick={() => setActiveImageProduct(product)}
-                    >
-                      View Image
-                    </button>
+                    <>
+                      <img
+                        src={product.image}
+                        alt=""
+                        className="product-card__image"
+                        width={product.imageWidth}
+                        height={product.imageHeight}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <button
+                        type="button"
+                        className="product-card__zoom"
+                        aria-label={`View image of ${product.title}`}
+                        onClick={(event) => {
+                          imageTriggerRef.current = event.currentTarget
+                          setActiveImageProduct(product)
+                        }}
+                      >
+                        View Image
+                      </button>
+                    </>
                   ) : null}
                 </div>
                 <div className="product-card__body">
@@ -122,7 +148,9 @@ export default function Shop() {
                     <p className="product-card__details">{product.details}</p>
                   ) : null}
                   {/* Shopify buy button goes here */}
-                  <span className="product-card__soon">{product.price ?? 'View More'}</span>
+                  <span className="product-card__soon">
+                    {product.price ? `${product.price} · Coming Soon` : 'Coming Soon'}
+                  </span>
                 </div>
               </article>
             ))}
@@ -139,11 +167,13 @@ export default function Shop() {
           className="image-modal"
           role="dialog"
           aria-modal="true"
-          aria-label={`${activeImageProduct.title} image preview`}
+          aria-labelledby="image-modal-title"
           onClick={() => setActiveImageProduct(null)}
         >
           <div className="image-modal__content" onClick={(event) => event.stopPropagation()}>
+            <h2 id="image-modal-title" className="sr-only">{activeImageProduct.title} image preview</h2>
             <button
+              ref={imageCloseButtonRef}
               type="button"
               className="image-modal__close"
               aria-label="Close image preview"
@@ -151,7 +181,14 @@ export default function Shop() {
             >
               ×
             </button>
-            <img src={activeImageProduct.image} alt={activeImageProduct.title} className="image-modal__img" />
+            <img
+              src={activeImageProduct.image}
+              alt={`${activeImageProduct.title} enlarged product view`}
+              className="image-modal__img"
+              width={activeImageProduct.imageWidth}
+              height={activeImageProduct.imageHeight}
+              decoding="async"
+            />
           </div>
         </div>
       ) : null}

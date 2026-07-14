@@ -1,12 +1,52 @@
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: optional;
+  src: url('/fonts/playfair-display-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: optional;
+  src: url('/fonts/oswald-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: optional;
+  src: url('/fonts/lora-roman-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: optional;
+  src: url('/fonts/lora-italic-latin.woff2') format('woff2');
+}
+
 :root {
-  --bg-dark:   #7f5e45;
-  --bg-mid:    #7f5e45;
-  --bg-light:  #7f5e45;
-  --amber:     #bf7f2a;
-  --gold:      #d9a24f;
-  --cream:     #f5ead5;
-  --text:      #f0ddc0;
-  --border:    #a8815b;
+  --forest:    #193d2b;
+  --moss:      #496b3b;
+  --charcoal:  #202620;
+  --copper:    #a65325;
+  --clay:      #914b2e;
+  --gold:      #d8a451;
+  --cream:     #f7efdd;
+  --paper:     #fff9eb;
+  --sage:      #d7dfc5;
+  --text:      #2e332c;
+  --muted:     #6a6c5b;
+  --border:    #d8c7a4;
+  --bg-dark:   var(--forest);
+  --bg-mid:    var(--moss);
+  --bg-light:  var(--paper);
+  --amber:     var(--copper);
 
   --serif:     'Playfair Display', Georgia, serif;
   --condensed: 'Oswald', sans-serif;
@@ -17,9 +57,14 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  background: var(--bg-dark);
+  background: var(--paper);
   color: var(--text);
   font-family: var(--body);
   font-size: 18px;
@@ -39,4 +84,27 @@ img {
 
 a {
   color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--paper);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px var(--forest);
+}
+
+::selection {
+  background: var(--forest);
+  color: var(--paper);
 }
