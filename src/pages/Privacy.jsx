@@ -141,7 +141,7 @@ export default function Privacy() {
                 processing, or appeal a decision about a privacy request.
               </p>
               <p>
-                Submit a request through our <Link to="/contact">Contact page</Link> and
+                Submit a request through our <Link to="/contact/">Contact page</Link> and
                 include enough detail for us to identify the relevant information. We
                 may need to verify your identity or authority. To appeal a denied request,
                 submit another message labeled &ldquo;Privacy Appeal&rdquo; and explain your concern.
@@ -179,7 +179,7 @@ export default function Privacy() {
               <h2>10. Contact Us</h2>
               <p>
                 Questions or privacy requests can be sent through our{' '}
-                <Link to="/contact">Contact page</Link> or by calling{' '}
+                <Link to="/contact/">Contact page</Link> or by calling{' '}
                 <a href="tel:2762991475">(276) 299-1475</a>. LoveLeeVa is based in
                 Jonesville, Virginia, United States.
               </p>

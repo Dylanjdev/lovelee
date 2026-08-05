@@ -2,26 +2,41 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://loveleeva.com/</loc>
-    <lastmod>2026-07-14</lastmod>
   </url>
   <url>
-    <loc>https://loveleeva.com/about</loc>
-    <lastmod>2026-07-14</lastmod>
+    <loc>https://loveleeva.com/about/</loc>
   </url>
   <url>
-    <loc>https://loveleeva.com/shop</loc>
-    <lastmod>2026-07-14</lastmod>
+    <loc>https://loveleeva.com/rural-development/</loc>
   </url>
   <url>
-    <loc>https://loveleeva.com/directory</loc>
-    <lastmod>2026-07-14</lastmod>
+    <loc>https://loveleeva.com/workforce-development/</loc>
   </url>
   <url>
-    <loc>https://loveleeva.com/customized</loc>
-    <lastmod>2026-07-14</lastmod>
+    <loc>https://loveleeva.com/explore-lee-county/</loc>
   </url>
   <url>
-    <loc>https://loveleeva.com/contact</loc>
-    <lastmod>2026-07-14</lastmod>
+    <loc>https://loveleeva.com/lee-county-virginia-guide/</loc>
+  </url>
+  <url>
+    <loc>https://loveleeva.com/shop/</loc>
+  </url>
+  <url>
+    <loc>https://loveleeva.com/directory/</loc>
+  </url>
+  <url>
+    <loc>https://loveleeva.com/calendar/</loc>
+  </url>
+  <url>
+    <loc>https://loveleeva.com/customized/</loc>
+  </url>
+  <url>
+    <loc>https://loveleeva.com/contact/</loc>
+  </url>
+  <url>
+    <loc>https://loveleeva.com/privacy-policy/</loc>
+  </url>
+  <url>
+    <loc>https://loveleeva.com/terms/</loc>
   </url>
 </urlset>

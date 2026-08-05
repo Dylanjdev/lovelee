@@ -74,7 +74,7 @@ export default function Contact() {
               <button type="submit" className="btn btn--primary">Send Message</button>
               <p className="form-privacy-note">
                 By submitting this form, you acknowledge our{' '}
-                <Link to="/privacy-policy">Privacy Policy</Link>.
+                <Link to="/privacy-policy/">Privacy Policy</Link>.
               </p>
             </form>
             <div className="contact__social-links">

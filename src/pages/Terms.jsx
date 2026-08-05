@@ -27,7 +27,7 @@ export default function Terms() {
                 These Terms of Service (&ldquo;Terms&rdquo;) govern your use of
                 loveleeva.com and the services made available through it. By accessing
                 or using the site, you agree to these Terms and our{' '}
-                <Link to="/privacy-policy">Privacy Policy</Link>. If you do not agree,
+                <Link to="/privacy-policy/">Privacy Policy</Link>. If you do not agree,
                 please do not use the site.
               </p>
             </section>
@@ -107,7 +107,7 @@ export default function Terms() {
                 clarity, display, and distribute that content as reasonably necessary to
                 operate and promote the requested feature, including a directory listing.
                 You may ask us to remove submitted directory content through the{' '}
-                <Link to="/contact">Contact page</Link>.
+                <Link to="/contact/">Contact page</Link>.
               </p>
             </section>
 
@@ -181,7 +181,7 @@ export default function Terms() {
               <h2>13. Contact Us</h2>
               <p>
                 Questions about these Terms can be sent through our{' '}
-                <Link to="/contact">Contact page</Link> or by calling{' '}
+                <Link to="/contact/">Contact page</Link> or by calling{' '}
                 <a href="tel:2762991475">(276) 299-1475</a>. LoveLeeVa is based in
                 Jonesville, Virginia, United States.
               </p>

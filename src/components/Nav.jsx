@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import CartDrawer from './CartDrawer.jsx'
 import logoImg from '../assets/OurLoveLeeLogoGray.webp'
+import { useCart } from '../lib/cartContext.js'
 
 const CartIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="22" height="22">
@@ -19,12 +21,13 @@ const MenuIcon = () => (
 )
 
 export default function Nav() {
-  const [isCartModalOpen, setIsCartModalOpen] = useState(false)
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const cartButtonRef = useRef(null)
-  const closeButtonRef = useRef(null)
   const menuButtonRef = useRef(null)
   const navRef = useRef(null)
+  const { itemCount } = useCart()
+  const closeCart = useCallback(() => setIsCartOpen(false), [])
 
   useEffect(() => {
     if (!isMenuOpen) return undefined
@@ -48,31 +51,6 @@ export default function Nav() {
       document.removeEventListener('pointerdown', handlePointerDown)
     }
   }, [isMenuOpen])
-
-  useEffect(() => {
-    if (!isCartModalOpen) return undefined
-
-    const previousOverflow = document.body.style.overflow
-    const cartButton = cartButtonRef.current
-    document.body.style.overflow = 'hidden'
-    closeButtonRef.current?.focus()
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') setIsCartModalOpen(false)
-      if (event.key === 'Tab') {
-        event.preventDefault()
-        closeButtonRef.current?.focus()
-      }
-    }
-
-    window.addEventListener('keydown', handleEscape)
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleEscape)
-      cartButton?.focus()
-    }
-  }, [isCartModalOpen])
 
   return (
     <>
@@ -98,26 +76,31 @@ export default function Nav() {
             className={`nav__links${isMenuOpen ? ' nav__links--open' : ''}`}
           >
             <li><NavLink to="/" end onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Home</NavLink></li>
-            <li><NavLink to="/about" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>About Us</NavLink></li>
-            <li><NavLink to="/shop" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Shop</NavLink></li>
-            <li><NavLink to="/directory" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Directory</NavLink></li>
-            <li><NavLink to="/contact" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Contact Us</NavLink></li>
-            <li><NavLink to="/customized" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Customized</NavLink></li>
+            <li><NavLink to="/about/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>About Us</NavLink></li>
+            <li><NavLink to="/shop/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Shop</NavLink></li>
+            <li><NavLink to="/directory/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Directory</NavLink></li>
+            <li><NavLink to="/lee-county-virginia-guide/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Local Guide</NavLink></li>
+            <li><NavLink to="/calendar/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Calendar</NavLink></li>
+            <li><NavLink to="/contact/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Contact Us</NavLink></li>
+            <li><NavLink to="/customized/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Customized</NavLink></li>
           </ul>
           <button
             ref={cartButtonRef}
             type="button"
             className="nav__cart"
-            aria-label="Open shopping cart status"
+            aria-label={`Open shopping cart${itemCount ? `, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}` : ''}`}
             aria-haspopup="dialog"
-            aria-expanded={isCartModalOpen}
-            aria-controls="cart-status-dialog"
+            aria-expanded={isCartOpen}
+            aria-controls="shopping-cart-drawer"
             onClick={() => {
               setIsMenuOpen(false)
-              setIsCartModalOpen(true)
+              setIsCartOpen(true)
             }}
           >
             <CartIcon />
+            {itemCount ? (
+              <span className="nav__cart-count" aria-hidden="true">{itemCount > 99 ? '99+' : itemCount}</span>
+            ) : null}
           </button>
           <button
             ref={menuButtonRef}
@@ -133,36 +116,13 @@ export default function Nav() {
         </nav>
       </header>
 
-      {isCartModalOpen ? (
-        <div
-          id="cart-status-dialog"
-          className="cart-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cart-modal-title"
-          aria-describedby="cart-modal-message"
-          onClick={() => setIsCartModalOpen(false)}
-        >
-          <div className="cart-modal__content" onClick={(event) => event.stopPropagation()}>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              className="cart-modal__close"
-              aria-label="Close cart status"
-              onClick={() => setIsCartModalOpen(false)}
-            >
-              ×
-            </button>
-            <p className="cart-modal__label">Under Construction</p>
-            <span className="cart-modal__sparkle" aria-hidden="true">✦</span>
-            <h2 id="cart-modal-title">Our Unicorns Are Working Their Magic</h2>
-            <p id="cart-modal-message">
-              Unicorns are working their magic to get the online shop and cart
-              functional as quickly as possible.
-            </p>
-          </div>
-        </div>
-      ) : null}
+      <div id="shopping-cart-drawer">
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={closeCart}
+          triggerRef={cartButtonRef}
+        />
+      </div>
     </>
   )
 }

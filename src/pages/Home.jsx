@@ -10,7 +10,7 @@ const pillars = [
     label: 'Homestead goods',
     description:
       'Homestead goods, handmade products, luffa, woodworking, crochet, local art, and rural Virginia products made with care and rooted in place.',
-    link: '/shop',
+    link: '/shop/',
     cta: 'Shop goods',
     icon: 'goods',
   },
@@ -19,8 +19,8 @@ const pillars = [
     label: 'Rural infrastructure',
     description:
       'Power farming, engineering, and rural infrastructure designed to help communities become more resilient, self-reliant, and energy-aware.',
-    link: '/about',
-    cta: 'See the mission',
+    link: '/rural-development/',
+    cta: 'Explore rural development',
     icon: 'power',
   },
   {
@@ -28,8 +28,8 @@ const pillars = [
     label: 'Workforce pathways',
     description:
       'Technical mentorship, VoTech partnerships, Open Source Oasis, and hands-on learning pathways designed to help future unicorns grow right here at home.',
-    link: '/contact',
-    cta: 'Build with us',
+    link: '/workforce-development/',
+    cta: 'Explore workforce development',
     icon: 'talent',
   },
   {
@@ -37,8 +37,8 @@ const pillars = [
     label: 'Local discovery',
     description:
       'Local experiences, tourism, events, and Appalachian discovery designed to keep talent, stories, and tourism dollars close to home.',
-    link: '/contact',
-    cta: 'Explore the idea',
+    link: '/explore-lee-county/',
+    cta: 'Discover Lee County',
     icon: 'adventure',
   },
 ]
@@ -127,15 +127,15 @@ export default function Home() {
               fetchPriority="high"
             />
             <p className="hero__eyebrow">We Grow Our Own</p>
-            <h1 className="hero__headline">LoveLeeVa: Sustainable Rural Development</h1>
+            <h1 className="hero__headline">Local Roots. Rural Possibility.</h1>
             <p className="hero__sub">
-              Growing local goods, local power, local talent, and local adventure in Lee
-              County, Virginia.
+              Sustainable rural development through local goods, rural infrastructure,
+              workforce development, and Appalachian discovery in Lee County, Virginia.
             </p>
             <div className="hero__ctas">
-              <Link to="/shop" className="btn btn--primary">Shop Local Goods</Link>
-              <Link to="/about" className="btn btn--ghost">Explore the Mission</Link>
-              <Link to="/contact" className="btn btn--copper">Grow Your Own Adventure</Link>
+              <Link to="/shop/" className="btn btn--primary">Shop Local Goods</Link>
+              <Link to="/rural-development/" className="btn btn--ghost">Explore the Mission</Link>
+              <Link to="/explore-lee-county/" className="btn btn--copper">Grow Your Own Adventure</Link>
             </div>
           </div>
           <div className="hero__system" aria-label="LoveLeeVa growth pillars">
@@ -159,9 +159,9 @@ export default function Home() {
             <p className="section-label">Four Pillars</p>
             <h2 className="section-heading">A local ecosystem designed for growth.</h2>
             <p className="section-copy">
-              LoveLeeVa is more than a storefront. It is an architecture for rural
-              development, connecting handmade goods, practical infrastructure, local
-              learning pathways, and visitor discovery.
+              LoveLeeVa is more than a storefront. It is a rural development platform
+              connecting handmade goods, practical infrastructure, technical mentorship,
+              vocational education, and local discovery.
             </p>
           </div>
           <div className="pillars__grid">
@@ -189,17 +189,17 @@ export default function Home() {
               Luffa products, woodworking, crochet, handmade goods, local artist items,
               and seasonal rural products can all live under one LoveLeeVa roof.
             </p>
-            <Link to="/shop" className="btn btn--primary">Shop LoveLeeVa Goods</Link>
+            <Link to="/shop/" className="btn btn--primary">Shop LoveLeeVa Goods</Link>
           </div>
           <div className="goods-grid" aria-label="Featured product areas">
             <Link
-              to="/shop"
+              to="/shop/"
               className="goods-tile goods-tile--photo"
               data-reveal
             >
               <img
                 src={rollingTrayHomepage}
-                alt=""
+                alt="Handcrafted wooden rolling tray with raised edges and an engraved tree detail"
                 className="goods-tile__image"
                 width="433"
                 height="577"
@@ -209,13 +209,13 @@ export default function Home() {
               <span>Woodworking</span>
             </Link>
             <Link
-              to="/shop"
+              to="/shop/"
               className="goods-tile goods-tile--photo"
               data-reveal
             >
               <img
                 src={wallArtHomepage}
-                alt=""
+                alt="Black-and-white Appalachian woodland landscape painting displayed on an easel"
                 className="goods-tile__image"
                 width="1600"
                 height="1200"
@@ -224,10 +224,10 @@ export default function Home() {
               />
               <span>Local Art</span>
             </Link>
-            <Link to="/shop" className="goods-tile goods-tile--texture" data-reveal>
+            <Link to="/shop/" className="goods-tile goods-tile--texture" data-reveal>
               <span>Luffa + Handmade Goods</span>
             </Link>
-            <Link to="/customized" className="goods-tile goods-tile--craft" data-reveal>
+            <Link to="/customized/" className="goods-tile goods-tile--craft" data-reveal>
               <span>Custom Rural Products</span>
             </Link>
           </div>
@@ -240,10 +240,10 @@ export default function Home() {
           <h2>We Grow Our Own.</h2>
           <p>
             LoveLeeVa is a sustainable rural development platform rooted in local
-            products, local infrastructure, local workforce development, and local
-            experiences. The foundation is simple: build useful systems at home, keep
-            opportunity close, and let Lee County's makers, students, small businesses,
-            and visitors see themselves in the same story.
+            products, rural infrastructure, workforce development, and tourism. The
+            foundation is simple: build useful systems at home, keep opportunity close,
+            and let Lee County&rsquo;s makers, students, small businesses, and visitors see
+            themselves in the same Appalachian story.
           </p>
         </div>
       </section>
@@ -258,6 +258,8 @@ export default function Home() {
             <p data-reveal>Local maker features and small business storytelling</p>
             <p data-reveal>Chamber work, small businesses, restaurants, and events visibility</p>
             <p data-reveal>Tourism ideas that keep stories and spending close to home</p>
+            <Link to="/explore-lee-county/" data-reveal>Explore Lee County <span aria-hidden="true">→</span></Link>
+            <Link to="/lee-county-virginia-guide/" data-reveal>Read the Local Guide <span aria-hidden="true">→</span></Link>
           </div>
         </div>
       </section>
@@ -267,9 +269,9 @@ export default function Home() {
           <p className="section-label">Contact / Collaborate</p>
           <h2>Want to collaborate, be featured, sell goods, or join the mission?</h2>
           <div className="collaborate-section__actions">
-            <Link to="/contact" className="btn btn--primary">Contact LoveLeeVa</Link>
-            <Link to="/contact" className="btn btn--ghost">Feature My Business</Link>
-            <Link to="/contact" className="btn btn--copper">Join the Local Maker Network</Link>
+            <Link to="/contact/" className="btn btn--primary">Contact LoveLeeVa</Link>
+            <Link to="/contact/" className="btn btn--ghost">Feature My Business</Link>
+            <Link to="/contact/" className="btn btn--copper">Join the Local Maker Network</Link>
           </div>
         </div>
       </section>

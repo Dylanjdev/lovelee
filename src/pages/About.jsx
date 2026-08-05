@@ -6,24 +6,32 @@ const pillars = [
     name: 'Goods',
     title: 'Grow Your Own Goods',
     description: 'Handmade products, woodworking, local art, homestead goods, and rural products created with care and rooted in place.',
+    link: '/shop/',
+    cta: 'Shop local goods',
   },
   {
     number: '02',
     name: 'Power',
     title: 'Grow Your Own Power',
     description: 'Practical ideas for power farming, engineering, and infrastructure that can make rural communities more resilient.',
+    link: '/rural-development/',
+    cta: 'Explore rural infrastructure',
   },
   {
     number: '03',
     name: 'Talent',
     title: 'Grow Your Own Talent',
     description: 'Technical mentorship, hands-on learning, and workforce pathways that help local people build opportunity close to home.',
+    link: '/workforce-development/',
+    cta: 'Explore workforce development',
   },
   {
     number: '04',
     name: 'Adventure',
     title: 'Grow Your Own Adventure',
     description: 'Local businesses, experiences, events, and Appalachian stories that give residents and visitors more reasons to explore Lee County.',
+    link: '/explore-lee-county/',
+    cta: 'Discover Lee County',
   },
 ]
 
@@ -51,8 +59,8 @@ export default function About() {
           <p className="hero__eyebrow">Rooted in Lee County</p>
           <h1 className="page-hero__headline">About LoveLeeVa</h1>
           <p className="page-hero__lede">
-            A local platform connecting what we make, what we know, and what we can
-            build together in Southwest Virginia.
+            A community development platform connecting what we make, what we know,
+            and what we can build together in rural Southwest Virginia.
           </p>
         </div>
       </section>
@@ -110,6 +118,9 @@ export default function About() {
                 </div>
                 <h3>{pillar.title}</h3>
                 <p>{pillar.description}</p>
+                <Link className="about-pillar__link" to={pillar.link}>
+                  {pillar.cta} <span aria-hidden="true">→</span>
+                </Link>
               </article>
             ))}
           </div>
@@ -165,9 +176,9 @@ export default function About() {
             </p>
           </div>
           <div className="about-cta__btns">
-            <Link to="/shop" className="btn btn--primary">Browse the Shop</Link>
-            <Link to="/directory" className="btn btn--ghost">Explore the Directory</Link>
-            <Link to="/contact" className="btn btn--copper">Start a Conversation</Link>
+            <Link to="/shop/" className="btn btn--primary">Browse the Shop</Link>
+            <Link to="/directory/" className="btn btn--ghost">Explore the Directory</Link>
+            <Link to="/contact/" className="btn btn--copper">Start a Conversation</Link>
           </div>
         </div>
       </section>

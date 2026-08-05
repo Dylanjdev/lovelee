@@ -37,22 +37,32 @@ export default function Footer() {
             loading="lazy"
             decoding="async"
           />
-          <p className="footer__tagline">Handcrafted in Jonesville, Virginia</p>
+          <p className="footer__tagline">Growing goods, talent, and local discovery in Jonesville, Virginia</p>
           <div className="social-links">
             <a href="https://www.facebook.com/loveleecounty" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on Facebook (opens in a new tab)"><FacebookIcon /></a>
             <a href="https://www.instagram.com/loveleeva/" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on Instagram (opens in a new tab)"><InstagramIcon /></a>
             <a href="https://www.linkedin.com/company/105233053/" target="_blank" rel="noopener noreferrer" aria-label="LoveLeeVa on LinkedIn (opens in a new tab)"><LinkedInIcon /></a>
           </div>
         </div>
+        <nav className="footer__nav" aria-label="Our work">
+          <p className="footer__nav-heading">Our Work</p>
+          <ul>
+            <li><Link to="/rural-development/">Rural Development</Link></li>
+            <li><Link to="/workforce-development/">Workforce Development</Link></li>
+            <li><Link to="/explore-lee-county/">Explore Lee County</Link></li>
+            <li><Link to="/lee-county-virginia-guide/">Lee County Guide</Link></li>
+          </ul>
+        </nav>
         <nav className="footer__nav" aria-label="Footer navigation">
           <p className="footer__nav-heading">Pages</p>
           <ul>
             <li><Link to="/">Home</Link></li>
-            <li><Link to="/about">About Us</Link></li>
-            <li><Link to="/shop">Shop</Link></li>
-            <li><Link to="/directory">Business Directory</Link></li>
-            <li><Link to="/contact">Contact Us</Link></li>
-            <li><Link to="/customized">Customized</Link></li>
+            <li><Link to="/about/">About Us</Link></li>
+            <li><Link to="/shop/">Shop</Link></li>
+            <li><Link to="/directory/">Business Directory</Link></li>
+            <li><Link to="/calendar/">Community Calendar</Link></li>
+            <li><Link to="/contact/">Contact Us</Link></li>
+            <li><Link to="/customized/">Customized</Link></li>
           </ul>
         </nav>
         <div className="footer__contact">
@@ -76,8 +86,8 @@ export default function Footer() {
           </a>
         </div>
         <div className="footer__links">
-          <Link to="/privacy-policy">Privacy Policy</Link>
-          <Link to="/terms">Terms of Service</Link>
+          <Link to="/privacy-policy/">Privacy Policy</Link>
+          <Link to="/terms/">Terms of Service</Link>
         </div>
       </div>
     </footer>

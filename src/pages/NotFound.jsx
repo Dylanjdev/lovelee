@@ -18,7 +18,7 @@ export default function NotFound() {
           <h2 className="section-heading">Let&rsquo;s get you back on the trail.</h2>
           <div className="about-cta__btns">
             <Link to="/" className="btn btn--primary">Return Home</Link>
-            <Link to="/contact" className="btn btn--ghost">Contact Us</Link>
+            <Link to="/contact/" className="btn btn--ghost">Contact Us</Link>
           </div>
         </div>
       </section>

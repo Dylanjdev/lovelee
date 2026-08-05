@@ -1,63 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import rollingTrayHomepage from '../assets/RollingTrayHomepage.webp'
-import wallArtHomepage from '../assets/wallArtHomepage.webp'
-import walnutBoard from '../assets/walnut.webp'
+import ProductVisual from '../components/ProductVisual.jsx'
+import { useCart } from '../lib/cartContext.js'
+import { formatMoney, productCategories, products } from '../lib/products.js'
 
 export default function Shop() {
+  const [activeCategory, setActiveCategory] = useState('all')
   const [activeImageProduct, setActiveImageProduct] = useState(null)
   const imageCloseButtonRef = useRef(null)
   const imageTriggerRef = useRef(null)
+  const { addItem, getItemQuantity } = useCart()
 
-  const products = [
-    {
-      id: 'cutting-boards',
-      title: 'Cutting Boards',
-      description:
-        'Premium hardwood, food-safe finish. Built for the kitchen, beautiful enough to display.',
-      tileClassName: 'product-card__img--1',
-      image: null,
-    },
-    {
-      id: 'rolling-trays',
-      title: 'Rolling Trays',
-      description:
-        'Custom engraved, one-of-a-kind pieces. Smooth finish, deep grain.',
-      tileClassName: 'product-card__img--2',
-      image: rollingTrayHomepage,
-      imageWidth: 433,
-      imageHeight: 577,
-    },
-    {
-      id: 'custom-orders',
-      title: 'Custom Orders',
-      description: 'Tell us what you need and we will build a one-of-a-kind piece.',
-      tileClassName: 'product-card__img--3',
-      image: null,
-    },
-    {
-      id: 'maple-walnut-board',
-      title: 'Maple and Walnut Board',
-      description:
-        'Cutting board, charcuterie board, lapboard, and display board handcrafted from maple and walnut.',
-      tileClassName: 'product-card__img--maple-walnut',
-      image: walnutBoard,
-      imageWidth: 433,
-      imageHeight: 577,
-      price: '$75',
-      details: 'Maple + Walnut',
-    },
-    {
-      id: 'wall-art',
-      title: 'Wall Art',
-      description:
-        'Decorative hardwood pieces to bring warmth to any room.',
-      tileClassName: 'product-card__img--wall-art',
-      image: wallArtHomepage,
-      imageWidth: 1600,
-      imageHeight: 1200,
-    },
-  ]
+  const visibleProducts = useMemo(
+    () => products.filter((product) => (
+      activeCategory === 'all' || product.category === activeCategory
+    )),
+    [activeCategory],
+  )
 
   useEffect(() => {
     if (!activeImageProduct) return undefined
@@ -67,20 +26,14 @@ export default function Shop() {
     document.body.style.overflow = 'hidden'
     imageCloseButtonRef.current?.focus()
 
-    const handleEsc = (event) => {
-      if (event.key === 'Escape') {
-        setActiveImageProduct(null)
-      }
-      if (event.key === 'Tab') {
-        event.preventDefault()
-        imageCloseButtonRef.current?.focus()
-      }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setActiveImageProduct(null)
     }
 
-    window.addEventListener('keydown', handleEsc)
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
       document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleEsc)
+      window.removeEventListener('keydown', handleKeyDown)
       imageTrigger?.focus()
     }
   }, [activeImageProduct])
@@ -90,74 +43,132 @@ export default function Shop() {
       <section className="page-hero page-hero--shop">
         <div className="page-hero__noise" aria-hidden="true" />
         <div className="page-hero__content">
-          <p className="hero__eyebrow">Products</p>
-          <h1 className="page-hero__headline">The Shop</h1>
+          <p className="hero__eyebrow">Local Products From Southwest Virginia</p>
+          <h1 className="page-hero__headline">Handmade Goods With Roots</h1>
+          <p className="page-hero__lede">
+            Small-batch woodworking, homesteading goods, fiber arts, and local products
+            made with a maker&rsquo;s hand in rural Virginia.
+          </p>
         </div>
       </section>
 
       <section className="shop">
         <div className="shop__inner">
-          <p className="section-label">Featured Collection</p>
-          <h2 className="section-heading">Our Products</h2>
-          <div className="shop-status" role="note" aria-labelledby="shop-status-title">
-            <p className="shop-status__label">Under Construction</p>
+          <div className="shop__intro">
             <div>
-              <h3 className="shop-status__title" id="shop-status-title">Our Unicorns Are Working Their Magic</h3>
-              <p className="shop-status__message">
-                Unicorns are working their magic to get the online shop and cart
-                functional as quickly as possible.
+              <p className="section-label">Preview Collection</p>
+              <h2 className="section-heading">Made here. Meant to be used.</h2>
+            </div>
+            <p className="section-copy">
+              Explore handmade goods shaped by Appalachian resourcefulness and everyday
+              use while the final product catalog, availability, and photography are
+              prepared for Odoo.
+            </p>
+          </div>
+
+          <div className="shop-preview-note" role="note">
+            <span aria-hidden="true">✦</span>
+            <p>
+              <strong>Storefront preview</strong>
+              Product details and stock shown here are placeholders. Checkout will not
+              submit payment until the secure store connection is live.
+            </p>
+          </div>
+
+          <div className="shop-toolbar" aria-label="Filter products by category">
+            {productCategories.map((category) => (
+              <button
+                type="button"
+                key={category.value}
+                className={activeCategory === category.value ? 'shop-filter shop-filter--active' : 'shop-filter'}
+                aria-pressed={activeCategory === category.value}
+                onClick={() => setActiveCategory(category.value)}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
+
+          <p className="shop-results" aria-live="polite">
+            {visibleProducts.length} {visibleProducts.length === 1 ? 'good' : 'goods'} in this collection
+          </p>
+
+          <div className="shop__grid">
+            {visibleProducts.map((product) => {
+              const quantityInCart = getItemQuantity(product.id)
+              const isAtLimit = quantityInCart >= product.inventoryCount
+
+              return (
+                <article className="product-card" key={product.id}>
+                  <button
+                    type="button"
+                    className="product-card__visual-button"
+                    aria-label={`View ${product.name}`}
+                    onClick={(event) => {
+                      imageTriggerRef.current = event.currentTarget
+                      setActiveImageProduct(product)
+                    }}
+                  >
+                    <ProductVisual product={product} className="product-card__visual" />
+                    {product.badge ? <span className="product-card__badge">{product.badge}</span> : null}
+                    <span className="product-card__view">View piece</span>
+                  </button>
+                  <div className="product-card__body">
+                    <p className="product-card__category">{product.categoryLabel}</p>
+                    <div className="product-card__heading">
+                      <h3 className="product-card__title">{product.name}</h3>
+                      <strong>{formatMoney(product.price)}</strong>
+                    </div>
+                    <p className="product-card__desc">{product.description}</p>
+                    <p className="product-card__details">{product.details}</p>
+                    <div className="product-card__purchase">
+                      <button
+                        type="button"
+                        className="btn btn--primary"
+                        disabled={isAtLimit}
+                        onClick={() => addItem(product.id)}
+                      >
+                        {isAtLimit ? 'Max in cart' : quantityInCart ? 'Add another' : 'Add to cart'}
+                      </button>
+                      <span aria-live="polite">
+                        {quantityInCart
+                          ? `${quantityInCart} in cart`
+                          : `${product.inventoryCount} available`}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+
+          <div className="shop__story">
+            <div>
+              <p className="section-label">Made in Rural Virginia</p>
+              <h2>Local products for home, homesteading, and giving.</h2>
+            </div>
+            <div>
+              <p>
+                LoveLeeVa celebrates useful, small-batch work: handmade goods with a
+                clear purpose, natural character, and a connection to Lee County. The
+                collection brings woodworking, fiber arts, homestead goods, and work
+                from local artists into one place.
+              </p>
+              <p>
+                Choosing local products helps skilled makers keep creating and gives
+                residents and visitors a tangible piece of rural Virginia to use,
+                share, and remember.
               </p>
             </div>
           </div>
-          <div className="shop__grid">
-            {products.map((product) => (
-              <article className="product-card" key={product.id}>
-                <div
-                  className={`product-card__img ${product.tileClassName} ${product.image ? 'product-card__img--interactive' : ''}`}
-                  aria-hidden={product.image ? undefined : true}
-                >
-                  {product.image ? (
-                    <>
-                      <img
-                        src={product.image}
-                        alt=""
-                        className="product-card__image"
-                        width={product.imageWidth}
-                        height={product.imageHeight}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <button
-                        type="button"
-                        className="product-card__zoom"
-                        aria-label={`View image of ${product.title}`}
-                        onClick={(event) => {
-                          imageTriggerRef.current = event.currentTarget
-                          setActiveImageProduct(product)
-                        }}
-                      >
-                        View Image
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-                <div className="product-card__body">
-                  <h3 className="product-card__title">{product.title}</h3>
-                  <p className="product-card__desc">{product.description}</p>
-                  {product.details ? (
-                    <p className="product-card__details">{product.details}</p>
-                  ) : null}
-                  {/* Shopify buy button goes here */}
-                  <span className="product-card__soon">
-                    {product.price ? `${product.price} · Coming Soon` : 'Coming Soon'}
-                  </span>
-                </div>
-              </article>
-            ))}
-          </div>
+
           <div className="shop__custom-cta">
-            <p>Don&rsquo;t see exactly what you need?</p>
-            <Link to="/customized" className="btn btn--ghost">Request a Custom Order</Link>
+            <div>
+              <p className="section-label">Made for you</p>
+              <h2>Have a one-of-a-kind piece in mind?</h2>
+              <p>Start with an idea, a purpose, or a person. We&rsquo;ll build from there.</p>
+            </div>
+            <Link to="/customized/" className="btn btn--ghost">Request a Custom Order</Link>
           </div>
         </div>
       </section>
@@ -168,27 +179,24 @@ export default function Shop() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="image-modal-title"
-          onClick={() => setActiveImageProduct(null)}
+          onMouseDown={() => setActiveImageProduct(null)}
         >
-          <div className="image-modal__content" onClick={(event) => event.stopPropagation()}>
-            <h2 id="image-modal-title" className="sr-only">{activeImageProduct.title} image preview</h2>
+          <div className="image-modal__content image-modal__content--product" onMouseDown={(event) => event.stopPropagation()}>
             <button
               ref={imageCloseButtonRef}
               type="button"
               className="image-modal__close"
-              aria-label="Close image preview"
+              aria-label="Close product preview"
               onClick={() => setActiveImageProduct(null)}
             >
               ×
             </button>
-            <img
-              src={activeImageProduct.image}
-              alt={`${activeImageProduct.title} enlarged product view`}
-              className="image-modal__img"
-              width={activeImageProduct.imageWidth}
-              height={activeImageProduct.imageHeight}
-              decoding="async"
-            />
+            <ProductVisual product={activeImageProduct} className="image-modal__visual" eager />
+            <div className="image-modal__caption">
+              <p>{activeImageProduct.categoryLabel}</p>
+              <h2 id="image-modal-title">{activeImageProduct.name}</h2>
+              <span>{activeImageProduct.details}</span>
+            </div>
           </div>
         </div>
       ) : null}

@@ -91,8 +91,8 @@ export default function Customized() {
             <button type="submit" className="btn btn--primary">Submit Request</button>
             <p className="form-privacy-note">
               Submitting this form is a request, not an accepted order. See our{' '}
-              <Link to="/privacy-policy">Privacy Policy</Link> and{' '}
-              <Link to="/terms">Terms of Service</Link>.
+              <Link to="/privacy-policy/">Privacy Policy</Link> and{' '}
+              <Link to="/terms/">Terms of Service</Link>.
             </p>
           </form>
         </div>
@@ -103,7 +103,7 @@ export default function Customized() {
           <p className="tagline-strip__text">
             &ldquo;Not sure where to start? Just reach out and we&rsquo;ll figure it out together.&rdquo;
           </p>
-          <Link to="/contact" className="btn btn--ghost">Contact Us Directly</Link>
+          <Link to="/contact/" className="btn btn--ghost">Contact Us Directly</Link>
         </div>
       </section>
     </>
