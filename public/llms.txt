@@ -1,0 +1,29 @@
+# LoveLeeVA
+
+> LoveLeeVA is a community-focused storefront and local resource for Lee County, Virginia. The site features handcrafted goods, community events, local businesses, and regional development information.
+
+## Primary Pages
+
+- [Home](https://loveleeva.com/): Overview of LoveLeeVA and its community mission.
+- [About](https://loveleeva.com/about/): Background, values, and local focus.
+- [Shop](https://loveleeva.com/shop/): Handcrafted goods and storefront information.
+- [Customized](https://loveleeva.com/customized/): Custom-order information and request form.
+- [Contact](https://loveleeva.com/contact/): Official contact information.
+
+## Lee County Resources
+
+- [Business Directory](https://loveleeva.com/directory/): Reviewed Lee County business listings.
+- [Community Calendar](https://loveleeva.com/calendar/): Community events and event submissions.
+- [Rural Development](https://loveleeva.com/rural-development/): Regional rural-development information.
+- [Workforce Development](https://loveleeva.com/workforce-development/): Local workforce resources.
+- [Explore Lee County](https://loveleeva.com/explore-lee-county/): Visitor and community highlights.
+- [Lee County Guide](https://loveleeva.com/lee-county-virginia-guide/): Guide to Lee County, Virginia.
+
+## Policies
+
+- [Privacy Policy](https://loveleeva.com/privacy-policy/): How information submitted through the site is handled.
+- [Terms of Service](https://loveleeva.com/terms/): Terms governing use of the website.
+
+## Usage Notes
+
+Product availability, prices, event details, and business listings may change. Use the linked pages as the current source and verify time-sensitive details before presenting them as facts.
