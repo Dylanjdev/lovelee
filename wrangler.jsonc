@@ -6,9 +6,6 @@
   "vars": {
     "ODOO_URL": "https://lovelee.odoo.com"
   },
-  "secrets": {
-    "required": ["ODOO_API_KEY"]
-  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
