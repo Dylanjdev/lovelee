@@ -28,3 +28,17 @@ service-role key in a `VITE_` environment variable.
 npm run lint
 npm run build
 ```
+
+## Hosting
+
+The production site is deployed to Cloudflare Workers from the `main` branch.
+Cloudflare Workers Builds uses:
+
+```text
+Build command: npm run build
+Deploy command: npx wrangler deploy
+```
+
+The Worker serves the Vite build from `dist` and reserves `/api/*` for private
+server-side integrations. Store backend credentials as encrypted Worker secrets;
+never put them in `VITE_` variables or commit them to this repository.
