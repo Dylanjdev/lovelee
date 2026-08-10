@@ -5,4 +5,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/',
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api/products': {
+        target: 'https://loveleeva.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 })
