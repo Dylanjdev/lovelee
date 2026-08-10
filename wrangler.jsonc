@@ -3,6 +3,12 @@
   "name": "lovelee",
   "compatibility_date": "2026-08-09",
   "main": "worker/index.js",
+  "vars": {
+    "ODOO_URL": "https://lovelee.odoo.com"
+  },
+  "secrets": {
+    "required": ["ODOO_API_KEY"]
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
