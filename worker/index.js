@@ -98,7 +98,6 @@ async function getProducts(env) {
       ['sale_ok', '=', true],
       ['type', '!=', 'service'],
       ['default_code', '!=', 'TIPS'],
-      ['categ_id.name', '!=', 'Services'],
     ],
     fields: ODOO_PRODUCT_FIELDS,
     order: 'name asc, id asc',
