@@ -63,6 +63,16 @@ function relationName(value, fallback) {
   return Array.isArray(value) && typeof value[1] === 'string' ? value[1] : fallback
 }
 
+function isStorefrontProduct(product) {
+  return Boolean(
+    product?.active
+    && product.sale_ok
+    && product.type !== 'service'
+    && product.default_code !== 'TIPS'
+    && relationName(product.categ_id, '').toLowerCase() !== 'services',
+  )
+}
+
 function mapProduct(product) {
   const availableQuantity = Math.max(0, Math.floor(Number(product.qty_available) || 0))
 
@@ -87,6 +97,8 @@ async function getProducts(env) {
       ['active', '=', true],
       ['sale_ok', '=', true],
       ['type', '!=', 'service'],
+      ['default_code', '!=', 'TIPS'],
+      ['categ_id.name', '!=', 'Services'],
     ],
     fields: ODOO_PRODUCT_FIELDS,
     order: 'name asc, id asc',
@@ -127,11 +139,19 @@ function detectImageType(bytes) {
 async function getProductImage(env, productId) {
   const records = await odooCall(env, 'product.product', 'read', {
     ids: [productId],
-    fields: ['image_512'],
+    fields: [
+      'active',
+      'sale_ok',
+      'type',
+      'default_code',
+      'categ_id',
+      'image_256',
+    ],
   })
-  const encodedImage = records[0]?.image_512
+  const product = records[0]
+  const encodedImage = product?.image_256
 
-  if (!encodedImage || typeof encodedImage !== 'string') {
+  if (!isStorefrontProduct(product) || !encodedImage || typeof encodedImage !== 'string') {
     return jsonResponse({ error: 'Product image not found.' }, { status: 404 })
   }
 

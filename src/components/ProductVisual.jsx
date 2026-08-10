@@ -1,10 +1,15 @@
+import { useState } from 'react'
+
 export default function ProductVisual({ product, className = '', eager = false }) {
+  const [failedImage, setFailedImage] = useState(null)
+  const showImage = Boolean(product.image && failedImage !== product.image)
+
   return (
     <div
       className={`product-visual product-visual--${product.tone}${className ? ` ${className}` : ''}`}
-      aria-hidden={product.image ? undefined : 'true'}
+      aria-hidden={showImage ? undefined : 'true'}
     >
-      {product.image ? (
+      {showImage ? (
         <img
           src={product.image}
           alt={product.imageAlt || product.name}
@@ -12,6 +17,7 @@ export default function ProductVisual({ product, className = '', eager = false }
           height={product.imageHeight}
           loading={eager ? 'eager' : 'lazy'}
           decoding="async"
+          onError={() => setFailedImage(product.image)}
         />
       ) : (
         <>

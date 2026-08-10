@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useReducer } from 'react'
+import { useEffect, useMemo, useReducer, useRef } from 'react'
 import { CartContext } from '../lib/cartContext.js'
-import { getProductById } from '../lib/products.js'
+import { useCatalog } from '../lib/catalogContext.js'
 
-const storageKey = 'loveleeva-cart-v1'
+const storageKey = 'loveleeva-cart-v2'
 
 const initialState = {
   items: [],
@@ -24,7 +24,7 @@ function cartReducer(state, action) {
   }
 
   if (action.type === 'add') {
-    const product = getProductById(action.productId)
+    const product = action.product
     if (!product) return state
 
     const existingItem = state.items.find((item) => item.productId === product.id)
@@ -55,7 +55,7 @@ function cartReducer(state, action) {
   }
 
   if (action.type === 'update') {
-    const product = getProductById(action.productId)
+    const product = action.product
     if (!product) return state
 
     if (Number(action.quantity) <= 0) {
@@ -92,7 +92,7 @@ function cartReducer(state, action) {
   return state
 }
 
-function readStoredCart() {
+function readStoredCart(getProductById) {
   try {
     const storedCart = JSON.parse(window.localStorage.getItem(storageKey) ?? '[]')
     if (!Array.isArray(storedCart)) return []
@@ -112,11 +112,16 @@ function readStoredCart() {
 }
 
 export default function CartProvider({ children }) {
+  const { getProductById, status: catalogStatus } = useCatalog()
   const [state, dispatch] = useReducer(cartReducer, initialState)
+  const hasHydrated = useRef(false)
 
   useEffect(() => {
-    dispatch({ type: 'hydrate', items: readStoredCart() })
-  }, [])
+    if (catalogStatus !== 'ready' || hasHydrated.current) return
+
+    hasHydrated.current = true
+    dispatch({ type: 'hydrate', items: readStoredCart(getProductById) })
+  }, [catalogStatus, getProductById])
 
   useEffect(() => {
     if (!state.isReady) return
@@ -141,10 +146,20 @@ export default function CartProvider({ children }) {
       itemCount: lineItems.reduce((total, item) => total + item.quantity, 0),
       subtotal: lineItems.reduce((total, item) => total + item.lineTotal, 0),
       addItem(productId, quantity = 1) {
-        dispatch({ type: 'add', productId, quantity })
+        dispatch({
+          type: 'add',
+          product: getProductById(productId),
+          productId: String(productId),
+          quantity,
+        })
       },
       updateQuantity(productId, quantity) {
-        dispatch({ type: 'update', productId, quantity })
+        dispatch({
+          type: 'update',
+          product: getProductById(productId),
+          productId: String(productId),
+          quantity,
+        })
       },
       removeItem(productId) {
         dispatch({ type: 'remove', productId })
@@ -156,7 +171,7 @@ export default function CartProvider({ children }) {
         return lineItems.find((item) => item.productId === productId)?.quantity ?? 0
       },
     }
-  }, [state.isReady, state.items])
+  }, [getProductById, state.isReady, state.items])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductVisual from '../components/ProductVisual.jsx'
 import { useCart } from '../lib/cartContext.js'
-import { formatMoney, productCategories, products } from '../lib/products.js'
+import { useCatalog } from '../lib/catalogContext.js'
+import { formatMoney } from '../lib/products.js'
 
 export default function Shop() {
   const [activeCategory, setActiveCategory] = useState('all')
@@ -10,12 +11,13 @@ export default function Shop() {
   const imageCloseButtonRef = useRef(null)
   const imageTriggerRef = useRef(null)
   const { addItem, getItemQuantity } = useCart()
+  const { products, categories, status, error, refreshCatalog } = useCatalog()
 
   const visibleProducts = useMemo(
     () => products.filter((product) => (
       activeCategory === 'all' || product.category === activeCategory
     )),
-    [activeCategory],
+    [activeCategory, products],
   )
 
   useEffect(() => {
@@ -56,91 +58,123 @@ export default function Shop() {
         <div className="shop__inner">
           <div className="shop__intro">
             <div>
-              <p className="section-label">Preview Collection</p>
+              <p className="section-label">Live Collection</p>
               <h2 className="section-heading">Made here. Meant to be used.</h2>
             </div>
             <p className="section-copy">
               Explore handmade goods shaped by Appalachian resourcefulness and everyday
-              use while the final product catalog, availability, and photography are
-              prepared for Odoo.
+              use. Prices and availability come directly from LoveLeeVA&rsquo;s inventory.
             </p>
           </div>
 
-          <div className="shop-preview-note" role="note">
+          <div className="shop-preview-note shop-preview-note--live" role="status">
             <span aria-hidden="true">✦</span>
             <p>
-              <strong>Storefront preview</strong>
-              Product details and stock shown here are placeholders. Checkout will not
-              submit payment until the secure store connection is live.
+              <strong>{status === 'ready' ? 'Connected to Odoo' : 'Connecting to Odoo'}</strong>
+              {status === 'ready'
+                ? 'Product prices and available quantities are synced securely from the live catalog.'
+                : 'Loading the latest product prices and inventory.'}
             </p>
           </div>
 
-          <div className="shop-toolbar" aria-label="Filter products by category">
-            {productCategories.map((category) => (
-              <button
-                type="button"
-                key={category.value}
-                className={activeCategory === category.value ? 'shop-filter shop-filter--active' : 'shop-filter'}
-                aria-pressed={activeCategory === category.value}
-                onClick={() => setActiveCategory(category.value)}
-              >
-                {category.label}
+          {status === 'error' ? (
+            <div className="commerce-empty shop-catalog-state" role="alert">
+              <span aria-hidden="true">!</span>
+              <p className="section-label">Catalog unavailable</p>
+              <h2>We couldn&rsquo;t load the live collection.</h2>
+              <p>{error}</p>
+              <button type="button" className="btn btn--primary" onClick={refreshCatalog}>
+                Try again
               </button>
-            ))}
-          </div>
+            </div>
+          ) : status === 'loading' ? (
+            <div className="commerce-empty shop-catalog-state" role="status">
+              <span aria-hidden="true">✦</span>
+              <p className="section-label">Loading collection</p>
+              <h2>Gathering the latest goods.</h2>
+              <p>Checking current prices and available quantities in Odoo.</p>
+            </div>
+          ) : (
+            <>
+              {categories.length > 2 ? (
+                <div className="shop-toolbar" aria-label="Filter products by category">
+                  {categories.map((category) => (
+                    <button
+                      type="button"
+                      key={category.value}
+                      className={activeCategory === category.value ? 'shop-filter shop-filter--active' : 'shop-filter'}
+                      aria-pressed={activeCategory === category.value}
+                      onClick={() => setActiveCategory(category.value)}
+                    >
+                      {category.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
-          <p className="shop-results" aria-live="polite">
-            {visibleProducts.length} {visibleProducts.length === 1 ? 'good' : 'goods'} in this collection
-          </p>
+              <p className="shop-results" aria-live="polite">
+                {visibleProducts.length} {visibleProducts.length === 1 ? 'good' : 'goods'} in this collection
+              </p>
 
-          <div className="shop__grid">
-            {visibleProducts.map((product) => {
-              const quantityInCart = getItemQuantity(product.id)
-              const isAtLimit = quantityInCart >= product.inventoryCount
+              <div className="shop__grid">
+                {visibleProducts.map((product) => {
+                  const quantityInCart = getItemQuantity(product.id)
+                  const isSoldOut = product.inventoryCount <= 0
+                  const isAtLimit = quantityInCart >= product.inventoryCount
 
-              return (
-                <article className="product-card" key={product.id}>
-                  <button
-                    type="button"
-                    className="product-card__visual-button"
-                    aria-label={`View ${product.name}`}
-                    onClick={(event) => {
-                      imageTriggerRef.current = event.currentTarget
-                      setActiveImageProduct(product)
-                    }}
-                  >
-                    <ProductVisual product={product} className="product-card__visual" />
-                    {product.badge ? <span className="product-card__badge">{product.badge}</span> : null}
-                    <span className="product-card__view">View piece</span>
-                  </button>
-                  <div className="product-card__body">
-                    <p className="product-card__category">{product.categoryLabel}</p>
-                    <div className="product-card__heading">
-                      <h3 className="product-card__title">{product.name}</h3>
-                      <strong>{formatMoney(product.price)}</strong>
-                    </div>
-                    <p className="product-card__desc">{product.description}</p>
-                    <p className="product-card__details">{product.details}</p>
-                    <div className="product-card__purchase">
+                  return (
+                    <article className="product-card" key={product.id}>
                       <button
                         type="button"
-                        className="btn btn--primary"
-                        disabled={isAtLimit}
-                        onClick={() => addItem(product.id)}
+                        className="product-card__visual-button"
+                        aria-label={`View ${product.name}`}
+                        onClick={(event) => {
+                          imageTriggerRef.current = event.currentTarget
+                          setActiveImageProduct(product)
+                        }}
                       >
-                        {isAtLimit ? 'Max in cart' : quantityInCart ? 'Add another' : 'Add to cart'}
+                        <ProductVisual product={product} className="product-card__visual" />
+                        {product.badge ? <span className="product-card__badge">{product.badge}</span> : null}
+                        <span className="product-card__view">View piece</span>
                       </button>
-                      <span aria-live="polite">
-                        {quantityInCart
-                          ? `${quantityInCart} in cart`
-                          : `${product.inventoryCount} available`}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              )
-            })}
-          </div>
+                      <div className="product-card__body">
+                        <p className="product-card__category">{product.categoryLabel}</p>
+                        <div className="product-card__heading">
+                          <h3 className="product-card__title">{product.name}</h3>
+                          <strong>{formatMoney(product.price)}</strong>
+                        </div>
+                        <p className="product-card__desc">{product.description}</p>
+                        <p className="product-card__details">{product.details}</p>
+                        <div className="product-card__purchase">
+                          <button
+                            type="button"
+                            className="btn btn--primary"
+                            disabled={isAtLimit}
+                            onClick={() => addItem(product.id)}
+                          >
+                            {isSoldOut
+                              ? 'Sold out'
+                              : isAtLimit
+                                ? 'Max in cart'
+                                : quantityInCart
+                                  ? 'Add another'
+                                  : 'Add to cart'}
+                          </button>
+                          <span aria-live="polite">
+                            {quantityInCart
+                              ? `${quantityInCart} in cart`
+                              : isSoldOut
+                                ? 'Currently unavailable'
+                                : `${product.inventoryCount} available`}
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            </>
+          )}
 
           <div className="shop__story">
             <div>

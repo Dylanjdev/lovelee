@@ -103,6 +103,23 @@
   text-transform: uppercase;
 }
 
+.shop-preview-note--live {
+  border-color: rgba(72, 101, 73, 0.28);
+  border-left-color: var(--moss);
+  background: rgba(232, 238, 222, 0.7);
+}
+
+.shop-preview-note--live > span {
+  color: var(--moss);
+}
+
+.shop-catalog-state {
+  margin: 1.5rem 0 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--paper);
+}
+
 .shop-toolbar {
   display: flex;
   flex-wrap: wrap;
