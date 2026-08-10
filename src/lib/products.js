@@ -9,8 +9,12 @@ function slugify(value) {
 }
 
 export function normalizeStoreProduct(product, index) {
-  const categoryLabel = product.categoryLabel || 'LoveLeeVA Goods'
+  const rawCategoryLabel = product.categoryLabel || 'LoveLeeVA Goods'
+  const categoryLabel = /^(loveleeva )?goods$/i.test(rawCategoryLabel.trim())
+    ? 'LoveLeeVA Collection'
+    : rawCategoryLabel
   const inventoryCount = Math.max(0, Math.floor(Number(product.inventoryCount) || 0))
+  const hasDescription = Boolean(product.description?.trim())
 
   return {
     id: String(product.id),
@@ -20,8 +24,9 @@ export function normalizeStoreProduct(product, index) {
     category: slugify(categoryLabel) || 'goods',
     categoryLabel,
     price: Number(product.price) || 0,
-    description: product.description || 'A small-batch local good from Lee County, Virginia.',
-    details: product.sku ? `Item ${product.sku} · Live Odoo inventory` : 'Live Odoo inventory',
+    description: product.description || 'A small-batch piece made in Lee County, Virginia.',
+    hasDescription,
+    details: product.sku ? `Item ${product.sku}` : 'Handmade in Southwest Virginia',
     badge: inventoryCount === 1 ? 'One available' : null,
     inventoryCount,
     image: product.imageUrl || null,
