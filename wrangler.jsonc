@@ -6,6 +6,12 @@
   "vars": {
     "ODOO_URL": "https://lovelee.odoo.com"
   },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "cache": {
+    "enabled": true
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

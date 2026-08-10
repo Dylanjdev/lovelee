@@ -121,20 +121,6 @@ function decodeBase64(value) {
   return bytes
 }
 
-function detectImageType(bytes) {
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) return 'image/jpeg'
-  if (bytes[0] === 0x89 && bytes[1] === 0x50) return 'image/png'
-  if (bytes[0] === 0x47 && bytes[1] === 0x49) return 'image/gif'
-  if (
-    bytes[0] === 0x52
-    && bytes[1] === 0x49
-    && bytes[2] === 0x46
-    && bytes[3] === 0x46
-  ) return 'image/webp'
-
-  return 'application/octet-stream'
-}
-
 async function getProductImage(env, productId) {
   const records = await odooCall(env, 'product.product', 'read', {
     ids: [productId],
@@ -155,9 +141,16 @@ async function getProductImage(env, productId) {
   }
 
   const bytes = decodeBase64(encodedImage)
-  return new Response(bytes, {
+  const optimizedImage = (
+    await env.IMAGES
+      .input(bytes)
+      .transform({ width: 640 })
+      .output({ format: 'image/webp', quality: 80 })
+  ).response()
+
+  return new Response(optimizedImage.body, {
     headers: {
-      'Content-Type': detectImageType(bytes),
+      'Content-Type': optimizedImage.headers.get('Content-Type') || 'image/webp',
       'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
       'X-Content-Type-Options': 'nosniff',
     },
