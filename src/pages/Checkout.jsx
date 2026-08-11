@@ -7,14 +7,58 @@ import { formatMoney } from '../lib/products.js'
 export default function Checkout() {
   const { items, itemCount, subtotal } = useCart()
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true)
-  const [previewStatus, setPreviewStatus] = useState('')
+  const [pricingTest, setPricingTest] = useState({
+    status: 'idle',
+    message: '',
+    result: null,
+  })
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    setPreviewStatus(
-      'Your checkout details are ready. Live UPS rates, AvaTax, and secure payment will activate when the Odoo connection is complete.',
-    )
+    setPricingTest({
+      status: 'loading',
+      message: 'Checking current prices and stock in Odoo…',
+      result: null,
+    })
+
+    try {
+      const response = await fetch('/api/checkout/validate', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: items.map(({ product, quantity }) => ({
+            productId: product.id,
+            quantity,
+            unitPrice: product.price,
+          })),
+        }),
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload) {
+        throw new Error(payload?.error || 'Live Odoo pricing could not be checked.')
+      }
+
+      setPricingTest({
+        status: 'success',
+        message: payload.hasPriceChanges
+          ? `Odoo returned updated pricing. The verified product subtotal is ${formatMoney(payload.subtotal, payload.currency)}.`
+          : `Odoo confirmed the current product subtotal of ${formatMoney(payload.subtotal, payload.currency)} and all quantities are available.`,
+        result: payload,
+      })
+    } catch (error) {
+      setPricingTest({
+        status: 'error',
+        message: error.message || 'Live Odoo pricing could not be checked.',
+        result: null,
+      })
+    }
   }
+
+  const verifiedSubtotal = pricingTest.result?.subtotal ?? subtotal
 
   if (!items.length) {
     return (
@@ -57,8 +101,8 @@ export default function Checkout() {
         <div className="checkout-page__inner checkout-page__layout">
           <form className="checkout-form" onSubmit={handleSubmit}>
             <div className="checkout-form__notice" role="note">
-              <span>Preview mode</span>
-              <p>No order or payment will be submitted while backend connections are pending.</p>
+              <span>Local test</span>
+              <p>This step checks live Odoo prices and inventory only. It cannot create an order or charge a card.</p>
             </div>
 
             <fieldset className="checkout-section">
@@ -134,9 +178,9 @@ export default function Checkout() {
                 <div className="shipping-preview__icon" aria-hidden="true">↗</div>
                 <div>
                   <strong>Live UPS rates</strong>
-                  <p>Available services and delivery estimates will appear after address validation.</p>
+                  <p>UPS Domestic and UPS International are connected. Address-based rate testing is next.</p>
                 </div>
-                <span>Pending</span>
+                <span>Next test</span>
               </div>
             </fieldset>
 
@@ -179,16 +223,25 @@ export default function Checkout() {
                 <span aria-hidden="true">◈</span>
                 <div>
                   <strong>Secure card payment</strong>
-                  <p>Stripe Elements will load here after the server connection is enabled.</p>
+                  <p>Card testing stays disabled until product, shipping, and tax totals are verified.</p>
                 </div>
               </div>
             </fieldset>
 
-            <button type="submit" className="btn btn--primary checkout-form__submit">
-              Review checkout setup
+            <button
+              type="submit"
+              className="btn btn--primary checkout-form__submit"
+              disabled={pricingTest.status === 'loading'}
+            >
+              {pricingTest.status === 'loading' ? 'Checking Odoo…' : 'Check live Odoo prices'}
             </button>
-            {previewStatus ? (
-              <p className="checkout-form__status" role="status">{previewStatus}</p>
+            {pricingTest.message ? (
+              <p
+                className={`checkout-form__status checkout-form__status--${pricingTest.status}`}
+                role={pricingTest.status === 'error' ? 'alert' : 'status'}
+              >
+                {pricingTest.message}
+              </p>
             ) : null}
             <p className="form-privacy-note">
               By continuing, you acknowledge the{' '}
@@ -216,8 +269,8 @@ export default function Checkout() {
             </div>
             <dl>
               <div>
-                <dt>Subtotal</dt>
-                <dd>{formatMoney(subtotal)}</dd>
+                <dt>{pricingTest.result ? 'Verified subtotal' : 'Subtotal'}</dt>
+                <dd>{formatMoney(verifiedSubtotal)}</dd>
               </div>
               <div>
                 <dt>UPS shipping</dt>
@@ -229,11 +282,13 @@ export default function Checkout() {
               </div>
               <div className="checkout-summary__total">
                 <dt>Current total</dt>
-                <dd>{formatMoney(subtotal)}</dd>
+                <dd>{formatMoney(verifiedSubtotal)}</dd>
               </div>
             </dl>
             <p>
-              Your final total will be recalculated securely from Odoo before payment.
+              {pricingTest.result
+                ? 'Product pricing and stock were verified against Odoo. Shipping and tax are not included yet.'
+                : 'Use the local price check before testing shipping, tax, or payment.'}
             </p>
           </aside>
         </div>

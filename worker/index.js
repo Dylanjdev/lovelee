@@ -1,3 +1,5 @@
+import { CheckoutValidationError, validateCartPricing } from '../server/checkoutValidation.js'
+
 const ODOO_PRODUCT_FIELDS = [
   'id',
   'display_name',
@@ -234,6 +236,40 @@ async function handleApiRequest(request, env, url) {
       ...config,
       fetchedAt: new Date().toISOString(),
     })
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/checkout/validate') {
+    const requestBody = await request.text()
+
+    if (requestBody.length > 16_384) {
+      return jsonResponse({ error: 'The checkout request is too large.' }, { status: 413 })
+    }
+
+    let payload
+    try {
+      payload = JSON.parse(requestBody)
+    } catch {
+      return jsonResponse({ error: 'The checkout request is invalid.' }, { status: 400 })
+    }
+
+    try {
+      const products = await getProducts(env)
+      const validation = validateCartPricing(payload?.items, products)
+      return jsonResponse(validation)
+    } catch (error) {
+      if (error instanceof CheckoutValidationError) {
+        return jsonResponse(
+          {
+            error: error.message,
+            code: error.code,
+            details: error.details,
+          },
+          { status: error.status },
+        )
+      }
+
+      throw error
+    }
   }
 
   const productImageId = getProductImageId(url.pathname)

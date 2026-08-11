@@ -1219,6 +1219,23 @@
   font-size: 0.76rem;
 }
 
+.checkout-form__status--success {
+  border-left-color: var(--moss);
+  background: rgba(215, 223, 197, 0.52);
+  color: var(--forest);
+}
+
+.checkout-form__status--error {
+  border-left-color: var(--clay);
+  background: rgba(166, 83, 37, 0.09);
+  color: #763d28;
+}
+
+.checkout-form__submit:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .checkout-form .form-privacy-note {
   margin: 0.8rem 1.75rem 0;
 }
