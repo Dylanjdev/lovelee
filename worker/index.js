@@ -127,9 +127,8 @@ async function getCheckoutConfig(env) {
       context: { lang: 'en_US' },
     }),
     odooCall(env, 'payment.provider', 'search_read', {
-      domain: [['state', 'in', ['enabled', 'test']]],
-      fields: ['id', 'name', 'code', 'state'],
-      order: 'name asc',
+      domain: [],
+      fields: ['id', 'name', 'state'],
       limit: 50,
       context: { lang: 'en_US' },
     }),
@@ -153,7 +152,6 @@ async function getCheckoutConfig(env) {
     paymentProviders: providers.map((provider) => ({
       id: provider.id,
       name: provider.name,
-      code: provider.code,
       mode: provider.state,
     })),
     configurationIssues: [
