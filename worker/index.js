@@ -110,6 +110,51 @@ async function getProducts(env) {
   return products.map(mapProduct)
 }
 
+async function getCheckoutConfig(env) {
+  const [countries, carriers, providers] = await Promise.all([
+    odooCall(env, 'res.country', 'search_read', {
+      domain: [['code', '!=', false]],
+      fields: ['id', 'name', 'code'],
+      order: 'name asc',
+      limit: 300,
+      context: { lang: 'en_US' },
+    }),
+    odooCall(env, 'delivery.carrier', 'search_read', {
+      domain: [['active', '=', true]],
+      fields: ['id', 'name', 'delivery_type'],
+      order: 'sequence asc, name asc',
+      limit: 50,
+      context: { lang: 'en_US' },
+    }),
+    odooCall(env, 'payment.provider', 'search_read', {
+      domain: [['state', 'in', ['enabled', 'test']]],
+      fields: ['id', 'name', 'code', 'state'],
+      order: 'name asc',
+      limit: 50,
+      context: { lang: 'en_US' },
+    }),
+  ])
+
+  return {
+    countries: countries.map((country) => ({
+      id: country.id,
+      name: country.name,
+      code: country.code,
+    })),
+    shippingMethods: carriers.map((carrier) => ({
+      id: carrier.id,
+      name: carrier.name,
+      provider: carrier.delivery_type,
+    })),
+    paymentProviders: providers.map((provider) => ({
+      id: provider.id,
+      name: provider.name,
+      code: provider.code,
+      mode: provider.state,
+    })),
+  }
+}
+
 function decodeBase64(value) {
   const binary = atob(value)
   const bytes = new Uint8Array(binary.length)
@@ -172,6 +217,14 @@ async function handleApiRequest(request, env, url) {
       products,
       currency: 'USD',
       source: 'odoo',
+      fetchedAt: new Date().toISOString(),
+    })
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/checkout/config') {
+    const config = await getCheckoutConfig(env)
+    return jsonResponse({
+      ...config,
       fetchedAt: new Date().toISOString(),
     })
   }
