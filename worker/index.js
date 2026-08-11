@@ -111,7 +111,7 @@ async function getProducts(env) {
 }
 
 async function getCheckoutConfig(env) {
-  const [countries, carriers, providers] = await Promise.all([
+  const [countriesResult, carriersResult, providersResult] = await Promise.allSettled([
     odooCall(env, 'res.country', 'search_read', {
       domain: [['code', '!=', false]],
       fields: ['id', 'name', 'code'],
@@ -135,6 +135,10 @@ async function getCheckoutConfig(env) {
     }),
   ])
 
+  const countries = countriesResult.status === 'fulfilled' ? countriesResult.value : []
+  const carriers = carriersResult.status === 'fulfilled' ? carriersResult.value : []
+  const providers = providersResult.status === 'fulfilled' ? providersResult.value : []
+
   return {
     countries: countries.map((country) => ({
       id: country.id,
@@ -152,6 +156,11 @@ async function getCheckoutConfig(env) {
       code: provider.code,
       mode: provider.state,
     })),
+    configurationIssues: [
+      countriesResult.status === 'rejected' ? 'countries' : null,
+      carriersResult.status === 'rejected' ? 'shipping-methods' : null,
+      providersResult.status === 'rejected' ? 'payment-providers' : null,
+    ].filter(Boolean),
   }
 }
 
