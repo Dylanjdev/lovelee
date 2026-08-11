@@ -20,7 +20,7 @@ const appearance = {
   },
 }
 
-function TestPaymentElement({ payment, quotationReference }) {
+function TestPaymentElement({ payment }) {
   const stripe = useStripe()
   const elements = useElements()
   const [status, setStatus] = useState({ state: 'idle', message: '' })
@@ -28,13 +28,13 @@ function TestPaymentElement({ payment, quotationReference }) {
   async function handlePayment() {
     if (!stripe || !elements || status.state === 'processing') return
 
-    setStatus({ state: 'processing', message: 'Submitting the Stripe test payment…' })
+    setStatus({ state: 'processing', message: 'Processing your secure payment…' })
     const { error: validationError } = await elements.submit()
 
     if (validationError) {
       setStatus({
         state: 'error',
-        message: validationError.message || 'Review the test card details and try again.',
+        message: validationError.message || 'Review your card details and try again.',
       })
       return
     }
@@ -51,7 +51,7 @@ function TestPaymentElement({ payment, quotationReference }) {
     if (error) {
       setStatus({
         state: 'error',
-        message: error.message || 'Stripe could not complete the test payment.',
+        message: error.message || 'We could not complete your payment. Please try again.',
       })
       return
     }
@@ -59,14 +59,16 @@ function TestPaymentElement({ payment, quotationReference }) {
     if (paymentIntent?.status === 'succeeded') {
       setStatus({
         state: 'success',
-        message: `Stripe test payment succeeded for ${quotationReference}. The Odoo quotation remains a draft until the webhook step is connected.`,
+        message: 'Payment approved. We are preparing your order confirmation.',
       })
       return
     }
 
     setStatus({
       state: 'success',
-      message: `Stripe accepted the test payment with status: ${paymentIntent?.status || 'processing'}.`,
+      message: paymentIntent?.status === 'processing'
+        ? 'Your payment is processing. We will confirm your order as soon as it is complete.'
+        : 'Your payment was received and is being finalized.',
     })
   }
 
@@ -74,14 +76,14 @@ function TestPaymentElement({ payment, quotationReference }) {
     <div className="stripe-test-payment">
       <div className="stripe-test-payment__header">
         <div>
-          <p className="section-label">Stripe test mode</p>
+          <p className="section-label">Secure card payment</p>
           <strong>{formatMoney(payment.amount / 100, payment.currency)} due</strong>
         </div>
-        <span>Not live</span>
+        <span>Encrypted</span>
       </div>
       <PaymentElement options={{ layout: 'tabs' }} />
       <p className="stripe-test-payment__hint">
-        Use test card <strong>4242 4242 4242 4242</strong>, any future expiration date, and any three-digit CVC.
+        Card details are encrypted and handled securely by Stripe.
       </p>
       <button
         type="button"
@@ -89,7 +91,9 @@ function TestPaymentElement({ payment, quotationReference }) {
         onClick={handlePayment}
         disabled={!stripe || !elements || status.state === 'processing'}
       >
-        {status.state === 'processing' ? 'Processing test payment…' : 'Pay with Stripe test card'}
+        {status.state === 'processing'
+          ? 'Processing payment…'
+          : `Pay ${formatMoney(payment.amount / 100, payment.currency)} securely`}
       </button>
       {status.message ? (
         <p
@@ -103,11 +107,11 @@ function TestPaymentElement({ payment, quotationReference }) {
   )
 }
 
-export default function StripePaymentForm({ payment, quotationReference }) {
+export default function StripePaymentForm({ payment }) {
   if (!stripePromise) {
     return (
       <p className="checkout-form__status checkout-form__status--error" role="alert">
-        The Stripe test publishable key is not configured.
+        Secure payment is temporarily unavailable. Please try again shortly.
       </p>
     )
   }
@@ -120,7 +124,7 @@ export default function StripePaymentForm({ payment, quotationReference }) {
         appearance,
       }}
     >
-      <TestPaymentElement payment={payment} quotationReference={quotationReference} />
+      <TestPaymentElement payment={payment} />
     </Elements>
   )
 }

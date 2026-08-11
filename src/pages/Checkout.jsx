@@ -5,6 +5,13 @@ import StripePaymentForm from '../components/StripePaymentForm.jsx'
 import { useCart } from '../lib/cartContext.js'
 import { formatMoney } from '../lib/products.js'
 
+const customerSafeErrorCodes = new Set([
+  'invalid_address',
+  'invalid_cart',
+  'invalid_customer',
+  'cart_changed',
+])
+
 export default function Checkout() {
   const { items, itemCount, subtotal } = useCart()
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true)
@@ -40,7 +47,7 @@ export default function Checkout() {
     const formData = new FormData(event.currentTarget)
     setPricingTest({
       status: 'loading',
-      message: 'Creating a sandbox quotation with live UPS and AvaTax…',
+      message: 'Calculating shipping and sales tax…',
       result: null,
     })
 
@@ -76,18 +83,22 @@ export default function Checkout() {
       const payload = await response.json().catch(() => null)
 
       if (!response.ok || !payload) {
-        throw new Error(payload?.error || 'Live Odoo pricing could not be checked.')
+        throw new Error(
+          customerSafeErrorCodes.has(payload?.code)
+            ? payload.error
+            : 'We could not calculate your order total. Please check your delivery address and try again.',
+        )
       }
 
       setPricingTest({
         status: 'success',
-        message: `${payload.reference} is a draft sandbox quotation. Odoo returned ${payload.carrier.name} shipping, AvaTax, and a final total of ${formatMoney(payload.total, payload.currency)}. No payment was attempted.`,
+        message: `Shipping and sales tax are calculated. Your order total is ${formatMoney(payload.total, payload.currency)}.`,
         result: payload,
       })
     } catch (error) {
       setPricingTest({
         status: 'error',
-        message: error.message || 'Live Odoo pricing could not be checked.',
+        message: error.message || 'We could not calculate your order total. Please try again.',
         result: null,
       })
     }
@@ -149,14 +160,14 @@ export default function Checkout() {
               <span>{pricingTest.result ? '✓' : '2'}</span>
               <div>
                 <strong>Shipping & tax</strong>
-                <small>UPS + AvaTax</small>
+                <small>Real-time rates</small>
               </div>
             </li>
             <li className={pricingTest.result ? 'checkout-progress__step checkout-progress__step--active' : 'checkout-progress__step'}>
               <span>3</span>
               <div>
                 <strong>Secure payment</strong>
-                <small>Stripe test mode</small>
+                <small>Encrypted card payment</small>
               </div>
             </li>
           </ol>
@@ -164,11 +175,11 @@ export default function Checkout() {
           <div className="checkout-page__layout">
           <form className="checkout-form" onSubmit={handleSubmit}>
             <div className="checkout-form__notice" role="note">
-              <span>Sandbox</span>
+              <span>Secure</span>
               <p>
                 {pricingTest.result
-                  ? `${pricingTest.result.reference} is verified and ready for a Stripe test payment.`
-                  : 'Complete your delivery details to verify live Odoo pricing, UPS shipping, and AvaTax.'}
+                  ? 'Your final total is ready. Complete secure payment below.'
+                  : 'Complete your delivery details to calculate shipping, sales tax, and your final total.'}
               </p>
             </div>
 
@@ -247,7 +258,7 @@ export default function Checkout() {
                 <span>03</span>
                 <span className="checkout-section__title">
                   Shipping & tax
-                  <small>Calculated securely by Odoo</small>
+                  <small>Calculated from your delivery address</small>
                 </span>
               </legend>
               <div className={`shipping-preview${pricingTest.result ? ' shipping-preview--verified' : ''}`}>
@@ -256,11 +267,11 @@ export default function Checkout() {
                   <strong>Live UPS rates</strong>
                   <p>
                     {pricingTest.result
-                      ? `${pricingTest.result.carrier.name} returned ${formatMoney(pricingTest.result.shipping, pricingTest.result.currency)}.`
-                      : 'Enter a complete address to request the matching UPS sandbox rate.'}
+                      ? `${pricingTest.result.carrier.name} · ${formatMoney(pricingTest.result.shipping, pricingTest.result.currency)}`
+                      : 'Enter a complete address to calculate available UPS delivery.'}
                   </p>
                 </div>
-                <span>{pricingTest.result ? 'Verified' : 'Sandbox'}</span>
+                <span>{pricingTest.result ? 'Ready' : 'Calculated next'}</span>
               </div>
               <button
                 type="submit"
@@ -288,7 +299,7 @@ export default function Checkout() {
                 <span>04</span>
                 <span className="checkout-section__title">
                   Billing & payment
-                  <small>Card details stay securely with Stripe</small>
+                  <small>Your card information is encrypted and protected</small>
                 </span>
               </legend>
               <label className="checkout-check">
@@ -327,16 +338,13 @@ export default function Checkout() {
                   <strong>Secure card payment</strong>
                   <p>
                     {pricingTest.result
-                      ? 'The final total is verified. Stripe test-card entry is the next local step.'
-                      : 'Card testing stays disabled until Odoo verifies product, shipping, and tax totals.'}
+                      ? 'Your final total is ready. Enter your payment details below.'
+                      : 'Calculate shipping and sales tax to unlock secure payment.'}
                   </p>
                 </div>
               </div>
               {pricingTest.result?.payment ? (
-                <StripePaymentForm
-                  payment={pricingTest.result.payment}
-                  quotationReference={pricingTest.result.reference}
-                />
+                <StripePaymentForm payment={pricingTest.result.payment} />
               ) : null}
             </fieldset>
             <p className="form-privacy-note">
@@ -354,7 +362,7 @@ export default function Checkout() {
                   {itemCount} {itemCount === 1 ? 'piece' : 'pieces'}
                 </h2>
               </div>
-              <span>{pricingTest.result?.reference || 'Estimate'}</span>
+              <span>{pricingTest.result ? 'Ready to pay' : 'Estimate'}</span>
             </div>
             <div className="checkout-summary__items">
               {items.map(({ product, quantity, lineTotal }) => (
@@ -370,7 +378,7 @@ export default function Checkout() {
             </div>
             <dl>
               <div>
-                <dt>{pricingTest.result ? 'Verified subtotal' : 'Subtotal'}</dt>
+                <dt>Subtotal</dt>
                 <dd>{formatMoney(verifiedSubtotal)}</dd>
               </div>
               <div>
@@ -378,24 +386,24 @@ export default function Checkout() {
                 <dd>{shippingTotal === null ? 'Pending' : formatMoney(shippingTotal, pricingTest.result.currency)}</dd>
               </div>
               <div>
-                <dt>AvaTax</dt>
+                <dt>Sales tax</dt>
                 <dd>{taxTotal === null ? 'Pending' : formatMoney(taxTotal, pricingTest.result.currency)}</dd>
               </div>
               <div className="checkout-summary__total">
-                <dt>{pricingTest.result ? 'Odoo total' : 'Current total'}</dt>
+                <dt>{pricingTest.result ? 'Order total' : 'Estimated total'}</dt>
                 <dd>{formatMoney(verifiedTotal, pricingTest.result?.currency)}</dd>
               </div>
             </dl>
             <p>
               {pricingTest.result
-                ? `${pricingTest.result.reference} remains a draft quotation. No inventory was reserved and no payment was created.`
-                : 'Use the sandbox quote check before testing Stripe payment.'}
+                ? 'UPS delivery and destination sales tax are included in the total above.'
+                : 'Shipping and sales tax are calculated from your delivery address.'}
             </p>
             <div className="checkout-summary__trust" aria-label="Checkout services">
-              <span>Odoo verified</span>
-              <span>UPS rated</span>
-              <span>AvaTax calculated</span>
-              <span>Stripe secured</span>
+              <span>Secure checkout</span>
+              <span>UPS delivery</span>
+              <span>Tax at checkout</span>
+              <span>Encrypted payment</span>
             </div>
           </aside>
           </div>
