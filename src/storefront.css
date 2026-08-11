@@ -1341,6 +1341,11 @@
   background: rgba(215, 223, 197, 0.36);
 }
 
+.shipping-preview--loading {
+  border-color: rgba(166, 83, 37, 0.4);
+  background: rgba(247, 239, 221, 0.82);
+}
+
 .shipping-preview__icon,
 .payment-preview > span:first-child {
   display: grid;
@@ -1350,6 +1355,21 @@
   border-radius: 50%;
   background: var(--forest);
   color: var(--gold);
+}
+
+.shipping-preview__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(239, 191, 76, 0.38);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: checkout-spin 700ms linear infinite;
+}
+
+@keyframes checkout-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .shipping-preview strong,
@@ -1745,6 +1765,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .shipping-preview__spinner {
+    animation-duration: 1.5s;
+  }
+
   .cart-drawer,
   .cart-drawer__panel {
     animation: none;

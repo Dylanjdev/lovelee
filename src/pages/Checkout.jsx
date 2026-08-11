@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductVisual from '../components/ProductVisual.jsx'
 import StripePaymentForm from '../components/StripePaymentForm.jsx'
@@ -12,6 +12,22 @@ const customerSafeErrorCodes = new Set([
   'cart_changed',
 ])
 
+const quoteFieldNames = new Set([
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'address',
+  'addressTwo',
+  'city',
+  'state',
+  'postalCode',
+  'country',
+])
+
+const requiredQuoteFieldNames = [...quoteFieldNames].filter((name) => name !== 'addressTwo')
+const automaticQuoteDelay = 1_000
+
 export default function Checkout() {
   const { items, itemCount, subtotal } = useCart()
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true)
@@ -24,6 +40,9 @@ export default function Checkout() {
     { code: 'US', name: 'United States' },
     { code: 'CA', name: 'Canada' },
   ])
+  const checkoutFormRef = useRef(null)
+  const automaticQuoteTimerRef = useRef(null)
+  const quoteRequestIdRef = useRef(0)
 
   useEffect(() => {
     let isActive = true
@@ -42,9 +61,22 @@ export default function Checkout() {
     }
   }, [])
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
+  useEffect(() => () => {
+    window.clearTimeout(automaticQuoteTimerRef.current)
+    quoteRequestIdRef.current += 1
+  }, [])
+
+  function quoteFieldsAreReady(form) {
+    return requiredQuoteFieldNames.every((name) => {
+      const field = form.elements.namedItem(name)
+      return field && String(field.value).trim() && field.checkValidity()
+    })
+  }
+
+  async function calculateQuote(form) {
+    const requestId = quoteRequestIdRef.current + 1
+    quoteRequestIdRef.current = requestId
+    const formData = new FormData(form)
     setPricingTest({
       status: 'loading',
       message: 'Calculating shipping and sales tax…',
@@ -82,6 +114,8 @@ export default function Checkout() {
       })
       const payload = await response.json().catch(() => null)
 
+      if (requestId !== quoteRequestIdRef.current) return
+
       if (!response.ok || !payload) {
         throw new Error(
           customerSafeErrorCodes.has(payload?.code)
@@ -96,12 +130,51 @@ export default function Checkout() {
         result: payload,
       })
     } catch (error) {
+      if (requestId !== quoteRequestIdRef.current) return
+
       setPricingTest({
         status: 'error',
         message: error.message || 'We could not calculate your order total. Please try again.',
         result: null,
       })
     }
+  }
+
+  function scheduleAutomaticQuote(event) {
+    if (!quoteFieldNames.has(event.target.name)) return
+
+    const form = event.currentTarget
+    window.clearTimeout(automaticQuoteTimerRef.current)
+    quoteRequestIdRef.current += 1
+    setPricingTest({ status: 'idle', message: '', result: null })
+
+    if (!quoteFieldsAreReady(form)) return
+
+    automaticQuoteTimerRef.current = window.setTimeout(() => {
+      calculateQuote(form)
+    }, automaticQuoteDelay)
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    window.clearTimeout(automaticQuoteTimerRef.current)
+    quoteRequestIdRef.current += 1
+
+    if (!quoteFieldsAreReady(event.currentTarget)) {
+      event.currentTarget.reportValidity()
+      return
+    }
+
+    calculateQuote(event.currentTarget)
+  }
+
+  function retryAutomaticQuote() {
+    const form = checkoutFormRef.current
+    if (!form || !quoteFieldsAreReady(form)) {
+      form?.reportValidity()
+      return
+    }
+    calculateQuote(form)
   }
 
   const verifiedSubtotal = pricingTest.result?.subtotal ?? subtotal
@@ -173,13 +246,20 @@ export default function Checkout() {
           </ol>
 
           <div className="checkout-page__layout">
-          <form className="checkout-form" onSubmit={handleSubmit}>
+          <form
+            className="checkout-form"
+            ref={checkoutFormRef}
+            onSubmit={handleSubmit}
+            onChange={scheduleAutomaticQuote}
+          >
             <div className="checkout-form__notice" role="note">
               <span>Secure</span>
               <p>
                 {pricingTest.result
                   ? 'Your final total is ready. Complete secure payment below.'
-                  : 'Complete your delivery details to calculate shipping, sales tax, and your final total.'}
+                  : pricingTest.status === 'loading'
+                    ? 'Calculating shipping, sales tax, and your final total…'
+                    : 'Complete your delivery details and your final total will calculate automatically.'}
               </p>
             </div>
 
@@ -261,36 +341,48 @@ export default function Checkout() {
                   <small>Calculated from your delivery address</small>
                 </span>
               </legend>
-              <div className={`shipping-preview${pricingTest.result ? ' shipping-preview--verified' : ''}`}>
-                <div className="shipping-preview__icon" aria-hidden="true">↗</div>
+              <div
+                className={`shipping-preview${pricingTest.result ? ' shipping-preview--verified' : ''}${pricingTest.status === 'loading' ? ' shipping-preview--loading' : ''}`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="shipping-preview__icon" aria-hidden="true">
+                  {pricingTest.status === 'loading' ? <span className="shipping-preview__spinner" /> : pricingTest.result ? '✓' : '↗'}
+                </div>
                 <div>
-                  <strong>Live UPS rates</strong>
+                  <strong>{pricingTest.status === 'loading' ? 'Calculating delivery' : 'Live UPS rates'}</strong>
                   <p>
-                    {pricingTest.result
-                      ? `${pricingTest.result.carrier.name} · ${formatMoney(pricingTest.result.shipping, pricingTest.result.currency)}`
-                      : 'Enter a complete address to calculate available UPS delivery.'}
+                    {pricingTest.status === 'loading'
+                      ? 'Checking available service and destination sales tax.'
+                      : pricingTest.result
+                        ? `${pricingTest.result.carrier.name} · ${formatMoney(pricingTest.result.shipping, pricingTest.result.currency)}`
+                        : 'Your rate appears automatically when the address is complete.'}
                   </p>
                 </div>
-                <span>{pricingTest.result ? 'Ready' : 'Calculated next'}</span>
+                <span>
+                  {pricingTest.status === 'loading'
+                    ? 'Calculating'
+                    : pricingTest.result
+                      ? 'Ready'
+                      : 'Automatic'}
+                </span>
               </div>
-              <button
-                type="submit"
-                className={`btn checkout-form__submit${pricingTest.result ? ' btn--ghost' : ' btn--primary'}`}
-                disabled={pricingTest.status === 'loading'}
-              >
-                {pricingTest.status === 'loading'
-                  ? 'Getting final total…'
-                  : pricingTest.result
-                    ? 'Refresh shipping & tax'
-                    : 'Calculate shipping & tax'}
-              </button>
-              {pricingTest.message ? (
-                <p
-                  className={`checkout-form__status checkout-form__status--${pricingTest.status}`}
-                  role={pricingTest.status === 'error' ? 'alert' : 'status'}
-                >
-                  {pricingTest.message}
-                </p>
+              {pricingTest.status === 'error' && pricingTest.message ? (
+                <>
+                  <p
+                    className={`checkout-form__status checkout-form__status--${pricingTest.status}`}
+                    role="alert"
+                  >
+                    {pricingTest.message}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn--ghost checkout-form__submit"
+                    onClick={retryAutomaticQuote}
+                  >
+                    Try calculation again
+                  </button>
+                </>
               ) : null}
             </fieldset>
 
