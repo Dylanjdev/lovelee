@@ -1,4 +1,6 @@
 import { CheckoutValidationError, validateCartPricing } from '../server/checkoutValidation.js'
+import { createSandboxQuote, OdooCheckoutError } from '../server/odooCheckout.js'
+import { createSandboxPaymentIntent, StripeCheckoutError } from '../server/stripeCheckout.js'
 
 const ODOO_PRODUCT_FIELDS = [
   'id',
@@ -263,6 +265,59 @@ async function handleApiRequest(request, env, url) {
             error: error.message,
             code: error.code,
             details: error.details,
+          },
+          { status: error.status },
+        )
+      }
+
+      throw error
+    }
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/checkout/quote') {
+    if (env.CHECKOUT_ENABLED !== 'true') {
+      return jsonResponse(
+        { error: 'Checkout quotation creation is not enabled in this environment.' },
+        { status: 503 },
+      )
+    }
+
+    const requestBody = await request.text()
+    if (requestBody.length > 32_768) {
+      return jsonResponse({ error: 'The checkout request is too large.' }, { status: 413 })
+    }
+
+    let payload
+    try {
+      payload = JSON.parse(requestBody)
+    } catch {
+      return jsonResponse({ error: 'The checkout request is invalid.' }, { status: 400 })
+    }
+
+    try {
+      const products = await getProducts(env)
+      const quotation = await createSandboxQuote({
+        call: (model, method, body) => odooCall(env, model, method, body),
+        payload,
+        products,
+      })
+      const payment = await createSandboxPaymentIntent({
+        secretKey: env.STRIPE_SECRET_KEY,
+        quotation,
+        email: payload?.customer?.email,
+      })
+      return jsonResponse({ ...quotation, payment })
+    } catch (error) {
+      if (
+        error instanceof CheckoutValidationError
+        || error instanceof OdooCheckoutError
+        || error instanceof StripeCheckoutError
+      ) {
+        return jsonResponse(
+          {
+            error: error.message,
+            code: error.code,
+            details: error.details || [],
           },
           { status: error.status },
         )

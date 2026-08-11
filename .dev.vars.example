@@ -1,3 +1,6 @@
 # Used later when testing Odoo quotation writes through `wrangler dev`.
 # Never commit a real API key.
 ODOO_API_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+CHECKOUT_ENABLED=false

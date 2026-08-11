@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductVisual from '../components/ProductVisual.jsx'
+import StripePaymentForm from '../components/StripePaymentForm.jsx'
 import { useCart } from '../lib/cartContext.js'
 import { formatMoney } from '../lib/products.js'
 
@@ -12,17 +13,39 @@ export default function Checkout() {
     message: '',
     result: null,
   })
+  const [countries, setCountries] = useState([
+    { code: 'US', name: 'United States' },
+    { code: 'CA', name: 'Canada' },
+  ])
+
+  useEffect(() => {
+    let isActive = true
+
+    fetch('/api/checkout/config', { headers: { Accept: 'application/json' } })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (isActive && Array.isArray(payload?.countries) && payload.countries.length) {
+          setCountries(payload.countries)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      isActive = false
+    }
+  }, [])
 
   async function handleSubmit(event) {
     event.preventDefault()
+    const formData = new FormData(event.currentTarget)
     setPricingTest({
       status: 'loading',
-      message: 'Checking current prices and stock in Odoo…',
+      message: 'Creating a sandbox quotation with live UPS and AvaTax…',
       result: null,
     })
 
     try {
-      const response = await fetch('/api/checkout/validate', {
+      const response = await fetch('/api/checkout/quote', {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -34,6 +57,20 @@ export default function Checkout() {
             quantity,
             unitPrice: product.price,
           })),
+          customer: {
+            firstName: formData.get('firstName'),
+            lastName: formData.get('lastName'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+          },
+          shippingAddress: {
+            street: formData.get('address'),
+            street2: formData.get('addressTwo'),
+            city: formData.get('city'),
+            state: formData.get('state'),
+            postalCode: formData.get('postalCode'),
+            countryCode: formData.get('country'),
+          },
         }),
       })
       const payload = await response.json().catch(() => null)
@@ -44,9 +81,7 @@ export default function Checkout() {
 
       setPricingTest({
         status: 'success',
-        message: payload.hasPriceChanges
-          ? `Odoo returned updated pricing. The verified product subtotal is ${formatMoney(payload.subtotal, payload.currency)}.`
-          : `Odoo confirmed the current product subtotal of ${formatMoney(payload.subtotal, payload.currency)} and all quantities are available.`,
+        message: `${payload.reference} is a draft sandbox quotation. Odoo returned ${payload.carrier.name} shipping, AvaTax, and a final total of ${formatMoney(payload.total, payload.currency)}. No payment was attempted.`,
         result: payload,
       })
     } catch (error) {
@@ -59,6 +94,9 @@ export default function Checkout() {
   }
 
   const verifiedSubtotal = pricingTest.result?.subtotal ?? subtotal
+  const shippingTotal = pricingTest.result?.shipping ?? null
+  const taxTotal = pricingTest.result?.tax ?? null
+  const verifiedTotal = pricingTest.result?.total ?? verifiedSubtotal
 
   if (!items.length) {
     return (
@@ -101,8 +139,8 @@ export default function Checkout() {
         <div className="checkout-page__inner checkout-page__layout">
           <form className="checkout-form" onSubmit={handleSubmit}>
             <div className="checkout-form__notice" role="note">
-              <span>Local test</span>
-              <p>This step checks live Odoo prices and inventory only. It cannot create an order or charge a card.</p>
+              <span>Sandbox</span>
+              <p>This creates a draft Odoo quotation and tests UPS and AvaTax. Card payment remains disabled.</p>
             </div>
 
             <fieldset className="checkout-section">
@@ -162,9 +200,9 @@ export default function Checkout() {
               <div className="contact-form__field">
                 <label htmlFor="checkout-country">Country</label>
                 <select id="checkout-country" name="country" defaultValue="US" autoComplete="shipping country" required>
-                  <option value="US">United States</option>
-                  <option value="CA">Canada</option>
-                  <option value="other">Other destination</option>
+                  {countries.map((country) => (
+                    <option value={country.code} key={country.code}>{country.name}</option>
+                  ))}
                 </select>
               </div>
             </fieldset>
@@ -178,9 +216,13 @@ export default function Checkout() {
                 <div className="shipping-preview__icon" aria-hidden="true">↗</div>
                 <div>
                   <strong>Live UPS rates</strong>
-                  <p>UPS Domestic and UPS International are connected. Address-based rate testing is next.</p>
+                  <p>
+                    {pricingTest.result
+                      ? `${pricingTest.result.carrier.name} returned ${formatMoney(pricingTest.result.shipping, pricingTest.result.currency)}.`
+                      : 'Enter a complete address to request the matching UPS sandbox rate.'}
+                  </p>
                 </div>
-                <span>Next test</span>
+                <span>{pricingTest.result ? 'Verified' : 'Sandbox'}</span>
               </div>
             </fieldset>
 
@@ -223,9 +265,19 @@ export default function Checkout() {
                 <span aria-hidden="true">◈</span>
                 <div>
                   <strong>Secure card payment</strong>
-                  <p>Card testing stays disabled until product, shipping, and tax totals are verified.</p>
+                  <p>
+                    {pricingTest.result
+                      ? 'The final total is verified. Stripe test-card entry is the next local step.'
+                      : 'Card testing stays disabled until Odoo verifies product, shipping, and tax totals.'}
+                  </p>
                 </div>
               </div>
+              {pricingTest.result?.payment ? (
+                <StripePaymentForm
+                  payment={pricingTest.result.payment}
+                  quotationReference={pricingTest.result.reference}
+                />
+              ) : null}
             </fieldset>
 
             <button
@@ -233,7 +285,7 @@ export default function Checkout() {
               className="btn btn--primary checkout-form__submit"
               disabled={pricingTest.status === 'loading'}
             >
-              {pricingTest.status === 'loading' ? 'Checking Odoo…' : 'Check live Odoo prices'}
+              {pricingTest.status === 'loading' ? 'Getting final total…' : 'Get UPS & AvaTax total'}
             </button>
             {pricingTest.message ? (
               <p
@@ -274,21 +326,21 @@ export default function Checkout() {
               </div>
               <div>
                 <dt>UPS shipping</dt>
-                <dd>Pending</dd>
+                <dd>{shippingTotal === null ? 'Pending' : formatMoney(shippingTotal, pricingTest.result.currency)}</dd>
               </div>
               <div>
                 <dt>AvaTax</dt>
-                <dd>Pending</dd>
+                <dd>{taxTotal === null ? 'Pending' : formatMoney(taxTotal, pricingTest.result.currency)}</dd>
               </div>
               <div className="checkout-summary__total">
-                <dt>Current total</dt>
-                <dd>{formatMoney(verifiedSubtotal)}</dd>
+                <dt>{pricingTest.result ? 'Odoo total' : 'Current total'}</dt>
+                <dd>{formatMoney(verifiedTotal, pricingTest.result?.currency)}</dd>
               </div>
             </dl>
             <p>
               {pricingTest.result
-                ? 'Product pricing and stock were verified against Odoo. Shipping and tax are not included yet.'
-                : 'Use the local price check before testing shipping, tax, or payment.'}
+                ? `${pricingTest.result.reference} remains a draft quotation. No inventory was reserved and no payment was created.`
+                : 'Use the sandbox quote check before testing Stripe payment.'}
             </p>
           </aside>
         </div>

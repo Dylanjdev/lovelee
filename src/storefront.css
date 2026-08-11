@@ -1204,6 +1204,66 @@
   padding-top: 0.3rem;
 }
 
+.stripe-test-payment {
+  margin-top: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fffdf7;
+}
+
+.stripe-test-payment__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.stripe-test-payment__header .section-label {
+  margin: 0 0 0.2rem;
+}
+
+.stripe-test-payment__header strong {
+  color: var(--forest);
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.stripe-test-payment__header > span {
+  padding: 0.28rem 0.5rem;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--copper);
+  font-family: var(--condensed);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stripe-test-payment__hint {
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.stripe-test-payment__hint strong {
+  color: var(--forest);
+}
+
+.stripe-test-payment__submit {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.stripe-test-payment > .checkout-form__status {
+  margin: 1rem 0 0;
+}
+
 .checkout-form__submit {
   display: flex;
   width: calc(100% - 3.5rem);

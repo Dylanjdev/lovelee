@@ -22,6 +22,21 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 Only use a Supabase publishable key in the Vite client. Never place a secret or
 service-role key in a `VITE_` environment variable.
 
+For local checkout testing, add Stripe test keys and the Odoo RPC key to
+`.env.local`:
+
+```dotenv
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+ODOO_URL=https://your-company.odoo.com
+ODOO_API_KEY=...
+```
+
+The local checkout creates draft Odoo quotations and Stripe test PaymentIntents.
+It requires AvaTax Sandbox with commits disabled and UPS test mode. Production
+quotation creation stays disabled unless the Worker variable
+`CHECKOUT_ENABLED=true` is explicitly configured.
+
 ## Checks
 
 ```sh
