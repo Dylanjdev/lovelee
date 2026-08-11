@@ -136,17 +136,49 @@ export default function Checkout() {
       </section>
 
       <section className="checkout-page">
-        <div className="checkout-page__inner checkout-page__layout">
+        <div className="checkout-page__inner">
+          <ol className="checkout-progress" aria-label="Checkout progress">
+            <li className="checkout-progress__step checkout-progress__step--active">
+              <span>1</span>
+              <div>
+                <strong>Your details</strong>
+                <small>Contact & delivery</small>
+              </div>
+            </li>
+            <li className={pricingTest.result ? 'checkout-progress__step checkout-progress__step--complete' : 'checkout-progress__step'}>
+              <span>{pricingTest.result ? '✓' : '2'}</span>
+              <div>
+                <strong>Shipping & tax</strong>
+                <small>UPS + AvaTax</small>
+              </div>
+            </li>
+            <li className={pricingTest.result ? 'checkout-progress__step checkout-progress__step--active' : 'checkout-progress__step'}>
+              <span>3</span>
+              <div>
+                <strong>Secure payment</strong>
+                <small>Stripe test mode</small>
+              </div>
+            </li>
+          </ol>
+
+          <div className="checkout-page__layout">
           <form className="checkout-form" onSubmit={handleSubmit}>
             <div className="checkout-form__notice" role="note">
               <span>Sandbox</span>
-              <p>This creates a draft Odoo quotation and tests UPS and AvaTax. Card payment remains disabled.</p>
+              <p>
+                {pricingTest.result
+                  ? `${pricingTest.result.reference} is verified and ready for a Stripe test payment.`
+                  : 'Complete your delivery details to verify live Odoo pricing, UPS shipping, and AvaTax.'}
+              </p>
             </div>
 
             <fieldset className="checkout-section">
               <legend>
                 <span>01</span>
-                Contact
+                <span className="checkout-section__title">
+                  Contact
+                  <small>For order updates and delivery questions</small>
+                </span>
               </legend>
               <div className="checkout-form__row">
                 <div className="contact-form__field">
@@ -173,7 +205,10 @@ export default function Checkout() {
             <fieldset className="checkout-section">
               <legend>
                 <span>02</span>
-                Delivery address
+                <span className="checkout-section__title">
+                  Delivery address
+                  <small>Used for UPS rates and destination tax</small>
+                </span>
               </legend>
               <div className="contact-form__field">
                 <label htmlFor="checkout-address">Street address</label>
@@ -210,9 +245,12 @@ export default function Checkout() {
             <fieldset className="checkout-section">
               <legend>
                 <span>03</span>
-                Shipping
+                <span className="checkout-section__title">
+                  Shipping & tax
+                  <small>Calculated securely by Odoo</small>
+                </span>
               </legend>
-              <div className="shipping-preview">
+              <div className={`shipping-preview${pricingTest.result ? ' shipping-preview--verified' : ''}`}>
                 <div className="shipping-preview__icon" aria-hidden="true">↗</div>
                 <div>
                   <strong>Live UPS rates</strong>
@@ -224,12 +262,34 @@ export default function Checkout() {
                 </div>
                 <span>{pricingTest.result ? 'Verified' : 'Sandbox'}</span>
               </div>
+              <button
+                type="submit"
+                className={`btn checkout-form__submit${pricingTest.result ? ' btn--ghost' : ' btn--primary'}`}
+                disabled={pricingTest.status === 'loading'}
+              >
+                {pricingTest.status === 'loading'
+                  ? 'Getting final total…'
+                  : pricingTest.result
+                    ? 'Refresh shipping & tax'
+                    : 'Calculate shipping & tax'}
+              </button>
+              {pricingTest.message ? (
+                <p
+                  className={`checkout-form__status checkout-form__status--${pricingTest.status}`}
+                  role={pricingTest.status === 'error' ? 'alert' : 'status'}
+                >
+                  {pricingTest.message}
+                </p>
+              ) : null}
             </fieldset>
 
             <fieldset className="checkout-section">
               <legend>
                 <span>04</span>
-                Billing & payment
+                <span className="checkout-section__title">
+                  Billing & payment
+                  <small>Card details stay securely with Stripe</small>
+                </span>
               </legend>
               <label className="checkout-check">
                 <input
@@ -261,7 +321,7 @@ export default function Checkout() {
                   </div>
                 </div>
               ) : null}
-              <div className="payment-preview" aria-label="Secure payment placeholder">
+              <div className={`payment-preview${pricingTest.result ? ' payment-preview--ready' : ''}`} aria-label="Secure payment status">
                 <span aria-hidden="true">◈</span>
                 <div>
                   <strong>Secure card payment</strong>
@@ -279,22 +339,6 @@ export default function Checkout() {
                 />
               ) : null}
             </fieldset>
-
-            <button
-              type="submit"
-              className="btn btn--primary checkout-form__submit"
-              disabled={pricingTest.status === 'loading'}
-            >
-              {pricingTest.status === 'loading' ? 'Getting final total…' : 'Get UPS & AvaTax total'}
-            </button>
-            {pricingTest.message ? (
-              <p
-                className={`checkout-form__status checkout-form__status--${pricingTest.status}`}
-                role={pricingTest.status === 'error' ? 'alert' : 'status'}
-              >
-                {pricingTest.message}
-              </p>
-            ) : null}
             <p className="form-privacy-note">
               By continuing, you acknowledge the{' '}
               <Link to="/privacy-policy/">Privacy Policy</Link> and{' '}
@@ -303,10 +347,15 @@ export default function Checkout() {
           </form>
 
           <aside className="checkout-summary" aria-labelledby="checkout-summary-title">
-            <p className="section-label">Your order</p>
-            <h2 id="checkout-summary-title">
-              {itemCount} {itemCount === 1 ? 'piece' : 'pieces'}
-            </h2>
+            <div className="checkout-summary__header">
+              <div>
+                <p className="section-label">Your order</p>
+                <h2 id="checkout-summary-title">
+                  {itemCount} {itemCount === 1 ? 'piece' : 'pieces'}
+                </h2>
+              </div>
+              <span>{pricingTest.result?.reference || 'Estimate'}</span>
+            </div>
             <div className="checkout-summary__items">
               {items.map(({ product, quantity, lineTotal }) => (
                 <div className="checkout-summary__item" key={product.id}>
@@ -342,7 +391,14 @@ export default function Checkout() {
                 ? `${pricingTest.result.reference} remains a draft quotation. No inventory was reserved and no payment was created.`
                 : 'Use the sandbox quote check before testing Stripe payment.'}
             </p>
+            <div className="checkout-summary__trust" aria-label="Checkout services">
+              <span>Odoo verified</span>
+              <span>UPS rated</span>
+              <span>AvaTax calculated</span>
+              <span>Stripe secured</span>
+            </div>
           </aside>
+          </div>
         </div>
       </section>
     </>
