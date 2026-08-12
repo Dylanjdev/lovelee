@@ -232,26 +232,115 @@ function partnerAddressMatches(partner, shippingAddress, countryId, stateId) {
   )
 }
 
+function uniquePositiveIds(values) {
+  return [...new Set(values.filter((value) => Number.isSafeInteger(value) && value > 0))]
+}
+
+async function mapPartnersToCommercialIds(call, partnerIds, knownPartners) {
+  const knownById = new Map(knownPartners.map((partner) => [partner.id, partner]))
+  const missingIds = partnerIds.filter((partnerId) => !knownById.has(partnerId))
+
+  if (missingIds.length) {
+    const missingPartners = await call('res.partner', 'read', {
+      ids: missingIds,
+      fields: ['id', 'commercial_partner_id'],
+    })
+    for (const partner of missingPartners) knownById.set(partner.id, partner)
+  }
+
+  return new Map(partnerIds.map((partnerId) => [
+    partnerId,
+    relationId(knownById.get(partnerId)?.commercial_partner_id),
+  ]))
+}
+
+export async function chooseCanonicalCustomerId(call, partners, commercialPartnerIds) {
+  if (commercialPartnerIds.length === 1) return commercialPartnerIds[0]
+
+  const partnerIds = uniquePositiveIds(partners.map((partner) => partner.id))
+  const users = partnerIds.length
+    ? await call('res.users', 'search_read', {
+        domain: [['partner_id', 'in', partnerIds]],
+        fields: ['id', 'partner_id', 'active', 'share'],
+        limit: 100,
+        context: { active_test: false },
+      })
+    : []
+  const userPartnerIds = uniquePositiveIds(users.map((user) => relationId(user.partner_id)))
+  const userCommercialIds = await mapPartnersToCommercialIds(call, userPartnerIds, partners)
+  const activePortal = users.find((user) => (
+    user.active && user.share && userCommercialIds.get(relationId(user.partner_id))
+  ))
+
+  if (activePortal) return userCommercialIds.get(relationId(activePortal.partner_id))
+
+  const confirmedOrders = await call('sale.order', 'search_read', {
+    domain: [
+      ['partner_id', 'child_of', commercialPartnerIds],
+      ['state', '=', 'sale'],
+    ],
+    fields: ['id', 'partner_id'],
+    limit: 1000,
+  })
+  const orderPartnerIds = uniquePositiveIds(
+    confirmedOrders.map((order) => relationId(order.partner_id)),
+  )
+  const orderCommercialIds = await mapPartnersToCommercialIds(call, orderPartnerIds, partners)
+  const confirmedOrderCounts = new Map(commercialPartnerIds.map((id) => [id, 0]))
+
+  for (const order of confirmedOrders) {
+    const commercialId = orderCommercialIds.get(relationId(order.partner_id))
+    if (confirmedOrderCounts.has(commercialId)) {
+      confirmedOrderCounts.set(commercialId, confirmedOrderCounts.get(commercialId) + 1)
+    }
+  }
+
+  const customerWithOrders = [...confirmedOrderCounts]
+    .filter(([, count]) => count > 0)
+    .sort(([firstId, firstCount], [secondId, secondCount]) => (
+      secondCount - firstCount || firstId - secondId
+    ))[0]
+
+  if (customerWithOrders) return customerWithOrders[0]
+
+  const activeInternal = users.find((user) => (
+    user.active && !user.share && userCommercialIds.get(relationId(user.partner_id))
+  ))
+  if (activeInternal) return userCommercialIds.get(relationId(activeInternal.partner_id))
+
+  const commercialPartners = await call('res.partner', 'read', {
+    ids: commercialPartnerIds,
+    fields: ['id', 'customer_rank', 'active'],
+  })
+  const canonical = commercialPartners.sort((first, second) => (
+    Number(second.active) - Number(first.active)
+    || Number(second.customer_rank) - Number(first.customer_rank)
+    || first.id - second.id
+  ))[0]
+
+  if (!canonical) {
+    throw new OdooCheckoutError('The customer account could not be resolved.', {
+      status: 409,
+      code: 'invalid_customer',
+    })
+  }
+
+  return canonical.id
+}
+
 async function findOrCreatePartners(call, details, country, state, checkoutMode) {
   const { customer, shippingAddress } = details
   const partners = await call('res.partner', 'search_read', {
     domain: [['email', '=ilike', customer.email]],
     fields: ['id', 'commercial_partner_id'],
-    limit: 20,
+    limit: 100,
   })
   const commercialPartnerIds = [...new Set(
     partners.map((partner) => relationId(partner.commercial_partner_id)).filter(Boolean),
   )]
 
-  if (commercialPartnerIds.length > 1) {
-    throw new OdooCheckoutError(
-      'This email is linked to more than one customer account. Contact LoveLeeVA for help.',
-      { status: 409, code: 'invalid_customer' },
-    )
-  }
-
-  if (commercialPartnerIds.length === 1) {
-    const customerId = commercialPartnerIds[0]
+  if (commercialPartnerIds.length) {
+    const customerId = await chooseCanonicalCustomerId(call, partners, commercialPartnerIds)
     const destinations = await call('res.partner', 'search_read', {
       domain: [['id', 'child_of', customerId]],
       fields: ['id', 'street', 'street2', 'city', 'zip', 'country_id', 'state_id'],
