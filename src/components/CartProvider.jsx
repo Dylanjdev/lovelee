@@ -165,6 +165,7 @@ export default function CartProvider({ children }) {
         dispatch({ type: 'remove', productId })
       },
       clearCart() {
+        window.localStorage.setItem(storageKey, '[]')
         dispatch({ type: 'clear' })
       },
       getItemQuantity(productId) {

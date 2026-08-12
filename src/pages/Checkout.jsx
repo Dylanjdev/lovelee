@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import ProductVisual from '../components/ProductVisual.jsx'
 import StripePaymentForm from '../components/StripePaymentForm.jsx'
 import { useCart } from '../lib/cartContext.js'
+import { completeCheckoutOrder } from '../lib/checkoutCompletion.js'
 import { formatMoney } from '../lib/products.js'
 
 const customerSafeErrorCodes = new Set([
@@ -29,7 +30,7 @@ const requiredQuoteFieldNames = [...quoteFieldNames].filter((name) => name !== '
 const automaticQuoteDelay = 1_000
 
 export default function Checkout() {
-  const { items, itemCount, subtotal } = useCart()
+  const { items, itemCount, subtotal, clearCart } = useCart()
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true)
   const [pricingTest, setPricingTest] = useState({
     status: 'idle',
@@ -40,6 +41,12 @@ export default function Checkout() {
     { code: 'US', name: 'United States' },
     { code: 'CA', name: 'Canada' },
   ])
+  const [completedOrder, setCompletedOrder] = useState(null)
+  const [returnPayment, setReturnPayment] = useState({
+    paymentIntentId: '',
+    status: 'idle',
+    message: '',
+  })
   const checkoutFormRef = useRef(null)
   const automaticQuoteTimerRef = useRef(null)
   const quoteRequestIdRef = useRef(0)
@@ -60,6 +67,32 @@ export default function Checkout() {
       isActive = false
     }
   }, [])
+
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search)
+    const paymentIntentId = search.get('payment_intent')
+    if (search.get('stripe_return') !== '1' || !paymentIntentId) return
+
+    window.history.replaceState({}, '', '/checkout/')
+    setReturnPayment({
+      paymentIntentId,
+      status: 'processing',
+      message: 'Your payment was received. We are confirming your order…',
+    })
+
+    completeCheckoutOrder(paymentIntentId)
+      .then((order) => {
+        setCompletedOrder(order)
+        clearCart()
+      })
+      .catch((error) => {
+        setReturnPayment({
+          paymentIntentId,
+          status: 'error',
+          message: error.message || 'Your payment is still being confirmed.',
+        })
+      })
+  }, [clearCart])
 
   useEffect(() => () => {
     window.clearTimeout(automaticQuoteTimerRef.current)
@@ -177,10 +210,114 @@ export default function Checkout() {
     calculateQuote(form)
   }
 
+  function handlePaymentComplete(order) {
+    setCompletedOrder(order)
+    clearCart()
+  }
+
+  async function retryReturnedPayment() {
+    if (!returnPayment.paymentIntentId) return
+
+    setReturnPayment((current) => ({
+      ...current,
+      status: 'processing',
+      message: 'Checking your confirmed payment…',
+    }))
+
+    try {
+      const order = await completeCheckoutOrder(returnPayment.paymentIntentId)
+      setCompletedOrder(order)
+      clearCart()
+    } catch (error) {
+      setReturnPayment((current) => ({
+        ...current,
+        status: 'error',
+        message: error.message || 'Your payment is still being confirmed.',
+      }))
+    }
+  }
+
   const verifiedSubtotal = pricingTest.result?.subtotal ?? subtotal
   const shippingTotal = pricingTest.result?.shipping ?? null
   const taxTotal = pricingTest.result?.tax ?? null
   const verifiedTotal = pricingTest.result?.total ?? verifiedSubtotal
+
+  if (completedOrder) {
+    return (
+      <>
+        <section className="page-hero page-hero--checkout">
+          <div className="page-hero__noise" aria-hidden="true" />
+          <div className="page-hero__content">
+            <p className="hero__eyebrow">Order confirmed</p>
+            <h1 className="page-hero__headline">Thank You</h1>
+          </div>
+        </section>
+        <section className="checkout-page">
+          <div className="checkout-page__inner">
+            <div className="order-confirmation">
+              <span className="order-confirmation__mark" aria-hidden="true">✓</span>
+              <p className="section-label">Payment approved</p>
+              <h2>Your order {completedOrder.reference} is confirmed.</h2>
+              <p>
+                We sent the confirmation to your email. LoveLeeVA will prepare your
+                handcrafted goods and send delivery updates as they become available.
+              </p>
+              <dl>
+                <div>
+                  <dt>Order</dt>
+                  <dd>{completedOrder.reference}</dd>
+                </div>
+                <div>
+                  <dt>Total paid</dt>
+                  <dd>{formatMoney(completedOrder.total, completedOrder.currency)}</dd>
+                </div>
+              </dl>
+              <div className="order-confirmation__actions">
+                {['invited', 'available'].includes(completedOrder.portal?.status) ? (
+                  <a className="btn btn--primary" href={completedOrder.portal.url}>View my orders</a>
+                ) : null}
+                <Link className="btn btn--ghost" to="/shop/">Continue shopping</Link>
+              </div>
+              {completedOrder.portal?.status === 'invited' ? (
+                <small>Check your email to finish setting up your order-history account.</small>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      </>
+    )
+  }
+
+  if (returnPayment.status !== 'idle') {
+    return (
+      <>
+        <section className="page-hero page-hero--checkout">
+          <div className="page-hero__noise" aria-hidden="true" />
+          <div className="page-hero__content">
+            <p className="hero__eyebrow">Secure checkout</p>
+            <h1 className="page-hero__headline">Confirming Payment</h1>
+          </div>
+        </section>
+        <section className="checkout-page">
+          <div className="checkout-page__inner">
+            <div className="order-confirmation">
+              <span className="order-confirmation__mark" aria-hidden="true">
+                {returnPayment.status === 'processing' ? '…' : '!'}
+              </span>
+              <p className="section-label">Payment received</p>
+              <h2>{returnPayment.message}</h2>
+              <p>Do not submit another payment while we finish checking this order.</p>
+              {returnPayment.status === 'error' ? (
+                <button type="button" className="btn btn--primary" onClick={retryReturnedPayment}>
+                  Check order again
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      </>
+    )
+  }
 
   if (!items.length) {
     return (
@@ -436,7 +573,10 @@ export default function Checkout() {
                 </div>
               </div>
               {pricingTest.result?.payment ? (
-                <StripePaymentForm payment={pricingTest.result.payment} />
+                <StripePaymentForm
+                  payment={pricingTest.result.payment}
+                  onComplete={handlePaymentComplete}
+                />
               ) : null}
             </fieldset>
             <p className="form-privacy-note">
