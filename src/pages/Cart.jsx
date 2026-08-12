@@ -71,8 +71,8 @@ export default function Cart() {
                 </dl>
                 <Link to="/checkout/" className="btn btn--primary">Continue to checkout</Link>
                 <p className="order-summary__note">
-                  Live UPS and AvaTax totals will replace these placeholders when the
-                  secure Odoo connection is enabled.
+                  UPS shipping and applicable sales tax are calculated automatically
+                  from your delivery address during secure checkout.
                 </p>
               </aside>
             </div>

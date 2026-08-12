@@ -45,9 +45,10 @@ export default function Terms() {
             <section>
               <h2>3. Shop and Custom Requests</h2>
               <p>
-                The online shop and cart are currently under construction. Product
-                descriptions, images, availability, and anticipated prices may change
-                before online ordering becomes available.
+                Products are handmade and may have natural variations. Product
+                descriptions, images, prices, and availability may change. Shipping and
+                applicable sales tax are calculated using the delivery information
+                provided during checkout.
               </p>
               <p>
                 Submitting a custom-order form is a request for information or a quote;
@@ -55,8 +56,8 @@ export default function Terms() {
                 project. A binding order exists only after the scope, price, timing,
                 payment terms, and other applicable details are confirmed by both sides.
                 Additional checkout, payment, shipping, return, warranty, or custom-work
-                terms may be presented when commerce becomes available and will control
-                for the applicable transaction if they conflict with these general Terms.
+                terms presented during an order will control for that transaction if
+                they conflict with these general Terms.
               </p>
             </section>
 
