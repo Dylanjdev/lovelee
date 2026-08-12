@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { CheckoutValidationError, validateCartPricing } from './server/checkoutValidation.js'
 import { createSandboxQuote, OdooCheckoutError } from './server/odooCheckout.js'
+import { createSandboxPaymentTransaction, OdooPaymentError } from './server/odooPayment.js'
 import { createSandboxPaymentIntent, StripeCheckoutError } from './server/stripeCheckout.js'
 
 function readJsonBody(request, maxLength = 32_768) {
@@ -149,9 +150,14 @@ function localCheckoutApi(runtimeEnv) {
             payload,
             products: catalog.products,
           })
+          const odooTransaction = await createSandboxPaymentTransaction({
+            call: odooCall,
+            quotation,
+          })
           const payment = await createSandboxPaymentIntent({
             secretKey: runtimeEnv.STRIPE_SECRET_KEY,
             quotation,
+            odooTransaction,
             email: payload?.customer?.email,
           })
           sendJson(response, 200, { ...quotation, payment })
@@ -159,6 +165,7 @@ function localCheckoutApi(runtimeEnv) {
           if (
             error instanceof CheckoutValidationError
             || error instanceof OdooCheckoutError
+            || error instanceof OdooPaymentError
             || error instanceof StripeCheckoutError
           ) {
             sendJson(response, error.status, {

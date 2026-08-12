@@ -1,5 +1,6 @@
 import { CheckoutValidationError, validateCartPricing } from '../server/checkoutValidation.js'
 import { createSandboxQuote, OdooCheckoutError } from '../server/odooCheckout.js'
+import { createSandboxPaymentTransaction, OdooPaymentError } from '../server/odooPayment.js'
 import { createSandboxPaymentIntent, StripeCheckoutError } from '../server/stripeCheckout.js'
 
 const ODOO_PRODUCT_FIELDS = [
@@ -301,9 +302,14 @@ async function handleApiRequest(request, env, url) {
         payload,
         products,
       })
+      const odooTransaction = await createSandboxPaymentTransaction({
+        call: (model, method, body) => odooCall(env, model, method, body),
+        quotation,
+      })
       const payment = await createSandboxPaymentIntent({
         secretKey: env.STRIPE_SECRET_KEY,
         quotation,
+        odooTransaction,
         email: payload?.customer?.email,
       })
       return jsonResponse({ ...quotation, payment })
@@ -311,6 +317,7 @@ async function handleApiRequest(request, env, url) {
       if (
         error instanceof CheckoutValidationError
         || error instanceof OdooCheckoutError
+        || error instanceof OdooPaymentError
         || error instanceof StripeCheckoutError
       ) {
         return jsonResponse(

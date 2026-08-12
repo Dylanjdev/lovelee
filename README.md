@@ -32,10 +32,13 @@ ODOO_URL=https://your-company.odoo.com
 ODOO_API_KEY=...
 ```
 
-The local checkout creates draft Odoo quotations and Stripe test PaymentIntents.
-It requires AvaTax Sandbox with commits disabled and UPS test mode. Production
-quotation creation stays disabled unless the Worker variable
-`CHECKOUT_ENABLED=true` is explicitly configured.
+The local checkout creates draft Odoo quotations, linked Odoo payment
+transactions, and Stripe test PaymentIntents. The PaymentIntent description
+matches the Odoo transaction reference so Odoo's signed Stripe webhook can
+complete the sale after successful payment. It requires AvaTax Sandbox with
+commits disabled, UPS test mode, and an Odoo Stripe provider using the same
+Stripe test account. Production quotation creation stays disabled unless the
+Worker variable `CHECKOUT_ENABLED=true` is explicitly configured.
 
 ## Checks
 

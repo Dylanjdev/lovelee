@@ -26,7 +26,12 @@ function paymentAmountInCents(total) {
   return amount
 }
 
-export async function createSandboxPaymentIntent({ secretKey, quotation, email }) {
+export async function createSandboxPaymentIntent({
+  secretKey,
+  quotation,
+  odooTransaction,
+  email,
+}) {
   if (!secretKey?.startsWith('sk_test_')) {
     throw new StripeCheckoutError('Stripe must use a test secret key for local checkout testing.', {
       status: 503,
@@ -38,20 +43,35 @@ export async function createSandboxPaymentIntent({ secretKey, quotation, email }
   const currency = String(quotation.currency || 'USD').toLowerCase()
   const stripe = new Stripe(secretKey)
 
+  if (
+    !Number.isSafeInteger(odooTransaction?.transactionId)
+    || !odooTransaction?.reference
+    || odooTransaction.state !== 'draft'
+    || odooTransaction.mode !== 'test'
+    || paymentAmountInCents(odooTransaction.amount) !== amount
+    || String(odooTransaction.currency).toLowerCase() !== currency
+  ) {
+    throw new StripeCheckoutError('Odoo did not prepare a matching test payment transaction.', {
+      code: 'invalid_payment_transaction',
+    })
+  }
+
   try {
     const intent = await stripe.paymentIntents.create(
       {
         amount,
         currency,
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card'],
         capture_method: 'automatic',
-        description: `LoveLeeVA sandbox quotation ${quotation.reference}`,
+        description: odooTransaction.reference,
         receipt_email: email,
         metadata: {
           integration: 'loveleeva_headless',
           environment: 'sandbox',
           odoo_quotation_id: String(quotation.quotationId),
           odoo_reference: quotation.reference,
+          odoo_payment_transaction_id: String(odooTransaction.transactionId),
+          odoo_payment_transaction_reference: odooTransaction.reference,
         },
       },
       {
