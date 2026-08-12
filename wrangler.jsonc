@@ -6,7 +6,7 @@
   "vars": {
     "ODOO_URL": "https://lovelee.odoo.com",
     "CHECKOUT_MODE": "live",
-    "CHECKOUT_ENABLED": "false"
+    "CHECKOUT_ENABLED": "true"
   },
   "secrets": {
     "required": [
