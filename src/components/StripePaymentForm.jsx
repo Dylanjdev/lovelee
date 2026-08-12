@@ -30,7 +30,7 @@ function wait(milliseconds) {
 function TestPaymentElement({ payment }) {
   const stripe = useStripe()
   const elements = useElements()
-  const [status, setStatus] = useState({ state: 'idle', message: '' })
+  const [status, setStatus] = useState({ state: 'idle', message: '', order: null })
 
   async function completeOrder(paymentIntentId) {
     for (let attempt = 0; attempt < completionAttempts; attempt += 1) {
@@ -63,13 +63,14 @@ function TestPaymentElement({ payment }) {
   async function handlePayment() {
     if (!stripe || !elements || status.state === 'processing') return
 
-    setStatus({ state: 'processing', message: 'Processing your secure payment…' })
+    setStatus({ state: 'processing', message: 'Processing your secure payment…', order: null })
     const { error: validationError } = await elements.submit()
 
     if (validationError) {
       setStatus({
         state: 'error',
         message: validationError.message || 'Review your card details and try again.',
+        order: null,
       })
       return
     }
@@ -87,6 +88,7 @@ function TestPaymentElement({ payment }) {
       setStatus({
         state: 'error',
         message: error.message || 'We could not complete your payment. Please try again.',
+        order: null,
       })
       return
     }
@@ -97,11 +99,13 @@ function TestPaymentElement({ payment }) {
         setStatus({
           state: 'success',
           message: `Payment approved. Order ${order.reference} is confirmed.`,
+          order,
         })
       } catch (completionError) {
         setStatus({
           state: 'processing',
           message: completionError.message,
+          order: null,
         })
       }
       return
@@ -112,6 +116,7 @@ function TestPaymentElement({ payment }) {
       message: paymentIntent?.status === 'processing'
         ? 'Your payment is processing. We will confirm your order as soon as it is complete.'
         : 'Your payment was received and is being finalized.',
+      order: null,
     })
   }
 
@@ -152,6 +157,18 @@ function TestPaymentElement({ payment }) {
         >
           {status.message}
         </p>
+      ) : null}
+      {status.state === 'success'
+      && ['invited', 'available'].includes(status.order?.portal?.status)
+      && status.order.portal.url ? (
+        <div className="stripe-test-payment__next">
+          <p>
+            {status.order.portal.status === 'invited'
+              ? 'Check your email to finish setting up your order-history account.'
+              : 'Sign in anytime to review your confirmed orders and delivery updates.'}
+          </p>
+          <a className="btn btn--ghost" href={status.order.portal.url}>View my orders</a>
+        </div>
       ) : null}
     </div>
   )

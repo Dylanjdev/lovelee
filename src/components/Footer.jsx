@@ -59,6 +59,7 @@ export default function Footer() {
             <li><Link to="/">Home</Link></li>
             <li><Link to="/about/">About Us</Link></li>
             <li><Link to="/shop/">Shop</Link></li>
+            <li><a href="https://lovelee.odoo.com/my/orders">My Orders</a></li>
             <li><Link to="/directory/">Business Directory</Link></li>
             <li><Link to="/calendar/">Community Calendar</Link></li>
             <li><Link to="/contact/">Contact Us</Link></li>

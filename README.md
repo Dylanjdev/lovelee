@@ -37,7 +37,11 @@ transactions, and Stripe test PaymentIntents. The PaymentIntent description
 matches the Odoo transaction reference so Odoo's signed Stripe webhook can
 record a successful payment. The checkout completion endpoint independently
 verifies that PaymentIntent with Stripe before asking Odoo to confirm the sale,
-create the delivery, and run payment post-processing. It requires AvaTax
+create the delivery, and run payment post-processing. After confirmation, Odoo
+creates a portal user when needed and emails the customer an invitation so they
+can view confirmed orders at `https://lovelee.odoo.com/my/orders`. A checkout
+email cannot also be the login for an existing internal Odoo user; use a unique
+customer email when testing portal invitations. It requires AvaTax
 Sandbox with commits disabled, UPS test mode, and an Odoo Stripe provider using
 the same Stripe test account. Production quotation creation stays disabled
 unless the Worker variable `CHECKOUT_ENABLED=true` is explicitly configured.

@@ -1484,6 +1484,26 @@
   margin: 1rem 0 0;
 }
 
+.stripe-test-payment__next {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.stripe-test-payment__next p {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.stripe-test-payment__next .btn {
+  width: 100%;
+  justify-content: center;
+  border: 1px solid var(--forest);
+  color: var(--forest);
+}
+
 .checkout-form__submit {
   display: flex;
   width: 100%;

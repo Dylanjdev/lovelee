@@ -92,6 +92,7 @@ main > section:not(.hero):not(.page-hero) {
 }
 
 .nav__link,
+.nav__account,
 .nav__cart {
   display: inline-flex;
   align-items: center;
@@ -123,6 +124,24 @@ main > section:not(.hero):not(.page-hero) {
   background: transparent;
   color: var(--forest);
   cursor: pointer;
+}
+
+.nav__account {
+  width: 44px;
+  margin-left: 0.25rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--forest);
+}
+
+.nav__account:hover,
+.nav__account:focus-visible,
+.nav__cart:hover,
+.nav__cart:focus-visible {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: var(--cream);
 }
 
 .nav__toggle {
@@ -3299,6 +3318,14 @@ main > section:not(.hero):not(.page-hero) {
     margin-left: auto;
   }
 
+  .nav__account {
+    margin-left: auto;
+  }
+
+  .nav__account + .nav__cart {
+    margin-left: 0;
+  }
+
   .nav__toggle {
     display: inline-flex;
   }
@@ -3431,6 +3458,7 @@ main > section:not(.hero):not(.page-hero) {
   }
 
   .nav__link,
+  .nav__account,
   .nav__cart,
   .nav__toggle {
     min-height: 38px;
@@ -3442,6 +3470,10 @@ main > section:not(.hero):not(.page-hero) {
   }
 
   .nav__cart {
+    width: 40px;
+  }
+
+  .nav__account {
     width: 40px;
   }
 

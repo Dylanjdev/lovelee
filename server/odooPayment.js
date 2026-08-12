@@ -1,3 +1,5 @@
+import { prepareCustomerPortal } from './odooPortal.js'
+
 const MAX_REFERENCE_LENGTH = 255
 
 export class OdooPaymentError extends Error {
@@ -206,6 +208,7 @@ async function readPaymentAndOrder(call, payment) {
       'amount_total',
       'amount_paid',
       'currency_id',
+      'partner_id',
       'transaction_ids',
       'picking_ids',
       'invoice_ids',
@@ -277,6 +280,11 @@ export async function completeSandboxPaymentTransaction({ call, payment }) {
     })
   }
 
+  const portal = await prepareCustomerPortal({
+    call,
+    partnerId: relationId(order.partner_id),
+  })
+
   return {
     reference: order.name,
     status: 'confirmed',
@@ -284,6 +292,7 @@ export async function completeSandboxPaymentTransaction({ call, payment }) {
     currency: relationName(order.currency_id),
     deliveryCreated: Boolean(order.picking_ids?.length),
     invoiceCreated: Boolean(order.invoice_ids?.length),
+    portal,
     mode: 'test',
   }
 }

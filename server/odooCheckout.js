@@ -202,20 +202,72 @@ async function findUpsCarrier(call, countryCode) {
   return carrier
 }
 
-async function findOrCreatePartner(call, details, country, state) {
+function partnerAddressMatches(partner, shippingAddress, countryId, stateId) {
+  return (
+    (partner.street || '') === shippingAddress.street
+    && (partner.street2 || '') === (shippingAddress.street2 || '')
+    && (partner.city || '') === shippingAddress.city
+    && (partner.zip || '') === shippingAddress.postalCode
+    && relationId(partner.country_id) === countryId
+    && relationId(partner.state_id) === stateId
+  )
+}
+
+async function findOrCreatePartners(call, details, country, state) {
   const { customer, shippingAddress } = details
   const partners = await call('res.partner', 'search_read', {
-    domain: [
-      ['email', '=ilike', customer.email],
-      ['street', '=', shippingAddress.street],
-      ['zip', '=', shippingAddress.postalCode],
-      ['country_id', '=', country.id],
-    ],
-    fields: ['id'],
-    limit: 2,
+    domain: [['email', '=ilike', customer.email]],
+    fields: ['id', 'commercial_partner_id'],
+    limit: 20,
   })
+  const commercialPartnerIds = [...new Set(
+    partners.map((partner) => relationId(partner.commercial_partner_id)).filter(Boolean),
+  )]
 
-  if (partners.length) return partners[0].id
+  if (commercialPartnerIds.length > 1) {
+    throw new OdooCheckoutError(
+      'This email is linked to more than one customer account. Contact LoveLeeVA for help.',
+      { status: 409, code: 'invalid_customer' },
+    )
+  }
+
+  if (commercialPartnerIds.length === 1) {
+    const customerId = commercialPartnerIds[0]
+    const destinations = await call('res.partner', 'search_read', {
+      domain: [['id', 'child_of', customerId]],
+      fields: ['id', 'street', 'street2', 'city', 'zip', 'country_id', 'state_id'],
+      limit: 100,
+    })
+    const existingDestination = destinations.find((partner) => (
+      partnerAddressMatches(partner, shippingAddress, country.id, state.id)
+    ))
+
+    if (existingDestination) {
+      return { customerId, shippingId: existingDestination.id }
+    }
+
+    const createdShippingIds = await call('res.partner', 'create', {
+      vals_list: [{
+        parent_id: customerId,
+        type: 'delivery',
+        name: `${customer.firstName} ${customer.lastName}`,
+        email: customer.email,
+        phone: customer.phone,
+        street: shippingAddress.street,
+        street2: shippingAddress.street2 || false,
+        city: shippingAddress.city,
+        state_id: state.id,
+        zip: shippingAddress.postalCode,
+        country_id: country.id,
+        comment: 'Delivery address created by the LoveLeeVA headless checkout sandbox test.',
+      }],
+    })
+
+    return {
+      customerId,
+      shippingId: createdRecordId(createdShippingIds, 'delivery address'),
+    }
+  }
 
   const createdIds = await call('res.partner', 'create', {
     vals_list: [{
@@ -232,7 +284,8 @@ async function findOrCreatePartner(call, details, country, state) {
       comment: 'Created by the LoveLeeVA headless checkout sandbox test.',
     }],
   })
-  return createdRecordId(createdIds, 'customer')
+  const customerId = createdRecordId(createdIds, 'customer')
+  return { customerId, shippingId: customerId }
 }
 
 function quoteOrderLines(validatedItems) {
@@ -320,13 +373,13 @@ export async function createSandboxQuote({ call, payload, products }) {
   const state = await findState(call, country.id, details.shippingAddress.state)
   const fiscalPosition = await findAvaTaxFiscalPosition(call)
   const carrier = await findUpsCarrier(call, details.shippingAddress.countryCode)
-  const partnerId = await findOrCreatePartner(call, details, country, state)
+  const partners = await findOrCreatePartners(call, details, country, state)
 
   const createdOrderIds = await call('sale.order', 'create', {
     vals_list: [{
-      partner_id: partnerId,
-      partner_invoice_id: partnerId,
-      partner_shipping_id: partnerId,
+      partner_id: partners.customerId,
+      partner_invoice_id: partners.customerId,
+      partner_shipping_id: partners.shippingId,
       fiscal_position_id: fiscalPosition.id,
       client_order_ref: `LoveLeeVA sandbox checkout ${new Date().toISOString()}`,
       origin: 'LoveLeeVA React checkout — sandbox',

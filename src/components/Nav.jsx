@@ -12,6 +12,13 @@ const CartIcon = () => (
   </svg>
 )
 
+const AccountIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="21" height="21">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
+  </svg>
+)
+
 const MenuIcon = () => (
   <span className="nav__menu-icon" aria-hidden="true">
     <span />
@@ -84,6 +91,13 @@ export default function Nav() {
             <li><NavLink to="/contact/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Contact Us</NavLink></li>
             <li><NavLink to="/customized/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Customized</NavLink></li>
           </ul>
+          <a
+            className="nav__account"
+            href="https://lovelee.odoo.com/my/orders"
+            aria-label="View your LoveLeeVA orders"
+          >
+            <AccountIcon />
+          </a>
           <button
             ref={cartButtonRef}
             type="button"
