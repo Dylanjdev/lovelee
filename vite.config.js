@@ -3,8 +3,16 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { CheckoutValidationError, validateCartPricing } from './server/checkoutValidation.js'
 import { createSandboxQuote, OdooCheckoutError } from './server/odooCheckout.js'
-import { createSandboxPaymentTransaction, OdooPaymentError } from './server/odooPayment.js'
-import { createSandboxPaymentIntent, StripeCheckoutError } from './server/stripeCheckout.js'
+import {
+  completeSandboxPaymentTransaction,
+  createSandboxPaymentTransaction,
+  OdooPaymentError,
+} from './server/odooPayment.js'
+import {
+  createSandboxPaymentIntent,
+  StripeCheckoutError,
+  verifySandboxPaymentIntent,
+} from './server/stripeCheckout.js'
 
 function readJsonBody(request, maxLength = 32_768) {
   return new Promise((resolve, reject) => {
@@ -189,6 +197,50 @@ function localCheckoutApi(runtimeEnv) {
           console.error('Local Odoo quotation failed', error)
           sendJson(response, 502, {
             error: 'Odoo could not create the sandbox quotation. No payment was attempted.',
+          })
+        }
+      })
+
+      server.middlewares.use('/api/checkout/complete', async (request, response, next) => {
+        if (request.method !== 'POST') {
+          next()
+          return
+        }
+
+        try {
+          const payload = await readJsonBody(request, 4_096)
+          const payment = await verifySandboxPaymentIntent({
+            secretKey: runtimeEnv.STRIPE_SECRET_KEY,
+            paymentIntentId: payload?.paymentIntentId,
+          })
+          const order = await completeSandboxPaymentTransaction({
+            call: odooCall,
+            payment,
+          })
+          sendJson(response, 200, order)
+        } catch (error) {
+          if (error instanceof OdooPaymentError || error instanceof StripeCheckoutError) {
+            sendJson(response, error.status, {
+              error: error.message,
+              code: error.code,
+            })
+            return
+          }
+
+          if (error.message === 'request_too_large') {
+            sendJson(response, 413, { error: 'The payment confirmation is too large.' })
+            return
+          }
+
+          if (error.message === 'invalid_json') {
+            sendJson(response, 400, { error: 'The payment confirmation is invalid.' })
+            return
+          }
+
+          console.error('Local Odoo payment completion failed', error)
+          sendJson(response, 502, {
+            error: 'The payment was received, but the order confirmation is still processing.',
+            code: 'payment_processing',
           })
         }
       })

@@ -1,7 +1,15 @@
 import { CheckoutValidationError, validateCartPricing } from '../server/checkoutValidation.js'
 import { createSandboxQuote, OdooCheckoutError } from '../server/odooCheckout.js'
-import { createSandboxPaymentTransaction, OdooPaymentError } from '../server/odooPayment.js'
-import { createSandboxPaymentIntent, StripeCheckoutError } from '../server/stripeCheckout.js'
+import {
+  completeSandboxPaymentTransaction,
+  createSandboxPaymentTransaction,
+  OdooPaymentError,
+} from '../server/odooPayment.js'
+import {
+  createSandboxPaymentIntent,
+  StripeCheckoutError,
+  verifySandboxPaymentIntent,
+} from '../server/stripeCheckout.js'
 
 const ODOO_PRODUCT_FIELDS = [
   'id',
@@ -133,7 +141,7 @@ async function getCheckoutConfig(env) {
     }),
     odooCall(env, 'payment.provider', 'search_read', {
       domain: [],
-      fields: ['id', 'name', 'state'],
+      fields: ['id', 'name', 'active', 'is_published'],
       limit: 50,
       context: { lang: 'en_US' },
     }),
@@ -157,7 +165,9 @@ async function getCheckoutConfig(env) {
     paymentProviders: providers.map((provider) => ({
       id: provider.id,
       name: provider.name,
-      mode: provider.state,
+      mode: provider.active
+        ? provider.is_published ? 'published' : 'unpublished'
+        : 'inactive',
     })),
     configurationIssues: [
       countriesResult.status === 'rejected' ? 'countries' : null,
@@ -326,6 +336,48 @@ async function handleApiRequest(request, env, url) {
             code: error.code,
             details: error.details || [],
           },
+          { status: error.status },
+        )
+      }
+
+      throw error
+    }
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/checkout/complete') {
+    if (env.CHECKOUT_ENABLED !== 'true') {
+      return jsonResponse(
+        { error: 'Checkout completion is not enabled in this environment.' },
+        { status: 503 },
+      )
+    }
+
+    const requestBody = await request.text()
+    if (requestBody.length > 4_096) {
+      return jsonResponse({ error: 'The payment confirmation is too large.' }, { status: 413 })
+    }
+
+    let payload
+    try {
+      payload = JSON.parse(requestBody)
+    } catch {
+      return jsonResponse({ error: 'The payment confirmation is invalid.' }, { status: 400 })
+    }
+
+    try {
+      const payment = await verifySandboxPaymentIntent({
+        secretKey: env.STRIPE_SECRET_KEY,
+        paymentIntentId: payload?.paymentIntentId,
+      })
+      const order = await completeSandboxPaymentTransaction({
+        call: (model, method, body) => odooCall(env, model, method, body),
+        payment,
+      })
+      return jsonResponse(order)
+    } catch (error) {
+      if (error instanceof OdooPaymentError || error instanceof StripeCheckoutError) {
+        return jsonResponse(
+          { error: error.message, code: error.code },
           { status: error.status },
         )
       }

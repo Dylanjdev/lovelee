@@ -20,10 +20,45 @@ const appearance = {
   },
 }
 
+const completionAttempts = 8
+const completionRetryDelay = 1_000
+
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+}
+
 function TestPaymentElement({ payment }) {
   const stripe = useStripe()
   const elements = useElements()
   const [status, setStatus] = useState({ state: 'idle', message: '' })
+
+  async function completeOrder(paymentIntentId) {
+    for (let attempt = 0; attempt < completionAttempts; attempt += 1) {
+      const response = await fetch('/api/checkout/complete', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ paymentIntentId }),
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (response.ok && payload?.reference) return payload
+
+      if (payload?.code === 'payment_processing' && attempt < completionAttempts - 1) {
+        await wait(completionRetryDelay)
+        continue
+      }
+
+      throw new Error(
+        payload?.error
+        || 'Your payment was received, but the order confirmation is still processing.',
+      )
+    }
+
+    throw new Error('Your payment was received, but the order confirmation is still processing.')
+  }
 
   async function handlePayment() {
     if (!stripe || !elements || status.state === 'processing') return
@@ -57,10 +92,18 @@ function TestPaymentElement({ payment }) {
     }
 
     if (paymentIntent?.status === 'succeeded') {
-      setStatus({
-        state: 'success',
-        message: 'Payment approved. We are preparing your order confirmation.',
-      })
+      try {
+        const order = await completeOrder(paymentIntent.id)
+        setStatus({
+          state: 'success',
+          message: `Payment approved. Order ${order.reference} is confirmed.`,
+        })
+      } catch (completionError) {
+        setStatus({
+          state: 'processing',
+          message: completionError.message,
+        })
+      }
       return
     }
 
@@ -89,11 +132,18 @@ function TestPaymentElement({ payment }) {
         type="button"
         className="btn btn--primary stripe-test-payment__submit"
         onClick={handlePayment}
-        disabled={!stripe || !elements || status.state === 'processing'}
+        disabled={
+          !stripe
+          || !elements
+          || status.state === 'processing'
+          || status.state === 'success'
+        }
       >
         {status.state === 'processing'
           ? 'Processing payment…'
-          : `Pay ${formatMoney(payment.amount / 100, payment.currency)} securely`}
+          : status.state === 'success'
+            ? 'Payment complete'
+            : `Pay ${formatMoney(payment.amount / 100, payment.currency)} securely`}
       </button>
       {status.message ? (
         <p
