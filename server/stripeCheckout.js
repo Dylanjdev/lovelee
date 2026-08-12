@@ -55,6 +55,7 @@ export async function createCheckoutPaymentIntent({
   const amount = paymentAmountInCents(quotation.total)
   const currency = String(quotation.currency || 'USD').toLowerCase()
   const stripe = new Stripe(secretKey)
+  const expectedPublishableKeyPrefix = quotation.mode === 'live' ? 'pk_live_' : 'pk_test_'
 
   if (
     !Number.isSafeInteger(odooTransaction?.transactionId)
@@ -63,6 +64,7 @@ export async function createCheckoutPaymentIntent({
     || odooTransaction.mode !== quotation.mode
     || paymentAmountInCents(odooTransaction.amount) !== amount
     || String(odooTransaction.currency).toLowerCase() !== currency
+    || !odooTransaction.publishableKey?.startsWith(expectedPublishableKeyPrefix)
   ) {
     throw new StripeCheckoutError('Odoo did not prepare a matching test payment transaction.', {
       code: 'invalid_payment_transaction',
@@ -103,6 +105,7 @@ export async function createCheckoutPaymentIntent({
       paymentIntentId: intent.id,
       amount: intent.amount,
       currency: intent.currency.toUpperCase(),
+      publishableKey: odooTransaction.publishableKey,
       mode: quotation.mode,
     }
   } catch (error) {

@@ -4,7 +4,15 @@
   "compatibility_date": "2026-08-09",
   "main": "worker/index.js",
   "vars": {
-    "ODOO_URL": "https://lovelee.odoo.com"
+    "ODOO_URL": "https://lovelee.odoo.com",
+    "CHECKOUT_MODE": "live",
+    "CHECKOUT_ENABLED": "false"
+  },
+  "secrets": {
+    "required": [
+      "ODOO_API_KEY",
+      "STRIPE_SECRET_KEY"
+    ]
   },
   "images": {
     "binding": "IMAGES"

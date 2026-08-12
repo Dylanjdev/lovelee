@@ -182,6 +182,7 @@ export async function createCheckoutPaymentTransaction({ call, quotation }) {
     amount: money(transaction.amount),
     currency: relationName(transaction.currency_id),
     provider: relationName(transaction.provider_id),
+    publishableKey: provider.stripe_publishable_key,
     mode: quotation.mode,
   }
 }

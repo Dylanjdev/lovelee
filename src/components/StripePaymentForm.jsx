@@ -3,10 +3,18 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { loadStripe } from '@stripe/stripe-js'
 import { formatMoney } from '../lib/products.js'
 
-const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-const stripePromise = /^pk_(test|live)_/.test(publishableKey || '')
-  ? loadStripe(publishableKey)
-  : null
+const stripePromises = new Map()
+
+function stripeForPayment(payment) {
+  const publishableKey = payment?.publishableKey
+  if (!/^pk_(test|live)_/.test(publishableKey || '')) return null
+
+  if (!stripePromises.has(publishableKey)) {
+    stripePromises.set(publishableKey, loadStripe(publishableKey))
+  }
+
+  return stripePromises.get(publishableKey)
+}
 
 const appearance = {
   theme: 'stripe',
@@ -175,6 +183,8 @@ function TestPaymentElement({ payment }) {
 }
 
 export default function StripePaymentForm({ payment }) {
+  const stripePromise = stripeForPayment(payment)
+
   if (!stripePromise) {
     return (
       <p className="checkout-form__status checkout-form__status--error" role="alert">
