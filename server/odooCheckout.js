@@ -131,7 +131,7 @@ async function findState(call, countryId, stateInput) {
   return matches[0]
 }
 
-async function assertSandboxConfiguration(call) {
+async function assertCheckoutConfiguration(call, checkoutMode) {
   const [company] = await call('res.company', 'search_read', {
     domain: [],
     fields: [
@@ -144,14 +144,19 @@ async function assertSandboxConfiguration(call) {
     limit: 1,
   })
 
+  const expectedEnvironment = checkoutMode === 'live' ? 'production' : 'sandbox'
+  const expectedCommit = checkoutMode === 'live'
+
   if (
     !company
-    || company.avalara_environment !== 'sandbox'
-    || company.avalara_commit
+    || company.avalara_environment !== expectedEnvironment
+    || Boolean(company.avalara_commit) !== expectedCommit
     || (company.avalara_connection_method === 'iap' && !company.avalara_iap_connected)
   ) {
     throw new OdooCheckoutError(
-      'Odoo AvaTax must be connected in Sandbox with transaction commits disabled for this test.',
+      checkoutMode === 'live'
+        ? 'Odoo AvaTax must use Production with transaction commits enabled for live checkout.'
+        : 'Odoo AvaTax must use Sandbox with transaction commits disabled for checkout testing.',
       { status: 503, code: 'unsafe_tax_configuration' },
     )
   }
@@ -174,7 +179,7 @@ async function findAvaTaxFiscalPosition(call) {
   return positions[0]
 }
 
-async function findUpsCarrier(call, countryCode) {
+async function findUpsCarrier(call, countryCode, checkoutMode) {
   const carriers = await call('delivery.carrier', 'search_read', {
     domain: [['active', '=', true], ['delivery_type', '=', 'ups_rest']],
     fields: ['id', 'name', 'prod_environment'],
@@ -192,11 +197,15 @@ async function findUpsCarrier(call, countryCode) {
     })
   }
 
-  if (carrier.prod_environment) {
-    throw new OdooCheckoutError('UPS must remain in test mode for local checkout testing.', {
+  if (Boolean(carrier.prod_environment) !== (checkoutMode === 'live')) {
+    throw new OdooCheckoutError(
+      checkoutMode === 'live'
+        ? `UPS ${expectedName} must use its Production Environment for live checkout.`
+        : `UPS ${expectedName} must use its Test Environment for checkout testing.`, {
       status: 503,
       code: 'unsafe_shipping_configuration',
-    })
+      },
+    )
   }
 
   return carrier
@@ -213,7 +222,7 @@ function partnerAddressMatches(partner, shippingAddress, countryId, stateId) {
   )
 }
 
-async function findOrCreatePartners(call, details, country, state) {
+async function findOrCreatePartners(call, details, country, state, checkoutMode) {
   const { customer, shippingAddress } = details
   const partners = await call('res.partner', 'search_read', {
     domain: [['email', '=ilike', customer.email]],
@@ -259,7 +268,7 @@ async function findOrCreatePartners(call, details, country, state) {
         state_id: state.id,
         zip: shippingAddress.postalCode,
         country_id: country.id,
-        comment: 'Delivery address created by the LoveLeeVA headless checkout sandbox test.',
+        comment: `Delivery address created by the LoveLeeVA headless checkout (${checkoutMode}).`,
       }],
     })
 
@@ -281,7 +290,7 @@ async function findOrCreatePartners(call, details, country, state) {
       zip: shippingAddress.postalCode,
       country_id: country.id,
       customer_rank: 1,
-      comment: 'Created by the LoveLeeVA headless checkout sandbox test.',
+      comment: `Created by the LoveLeeVA headless checkout (${checkoutMode}).`,
     }],
   })
   const customerId = createdRecordId(createdIds, 'customer')
@@ -357,7 +366,14 @@ async function readFinalOrder(call, orderId) {
   return order
 }
 
-export async function createSandboxQuote({ call, payload, products }) {
+export async function createCheckoutQuote({ call, payload, products, checkoutMode = 'sandbox' }) {
+  if (!['sandbox', 'live'].includes(checkoutMode)) {
+    throw new OdooCheckoutError('Checkout mode is not configured.', {
+      status: 503,
+      code: 'unsafe_checkout_configuration',
+    })
+  }
+
   const details = normalizeCheckoutDetails(payload)
   let validation
 
@@ -368,12 +384,12 @@ export async function createSandboxQuote({ call, payload, products }) {
     throw new OdooCheckoutError('The cart could not be validated.', { cause: error })
   }
 
-  await assertSandboxConfiguration(call)
+  await assertCheckoutConfiguration(call, checkoutMode)
   const country = await findCountry(call, details.shippingAddress.countryCode)
   const state = await findState(call, country.id, details.shippingAddress.state)
   const fiscalPosition = await findAvaTaxFiscalPosition(call)
-  const carrier = await findUpsCarrier(call, details.shippingAddress.countryCode)
-  const partners = await findOrCreatePartners(call, details, country, state)
+  const carrier = await findUpsCarrier(call, details.shippingAddress.countryCode, checkoutMode)
+  const partners = await findOrCreatePartners(call, details, country, state, checkoutMode)
 
   const createdOrderIds = await call('sale.order', 'create', {
     vals_list: [{
@@ -381,8 +397,8 @@ export async function createSandboxQuote({ call, payload, products }) {
       partner_invoice_id: partners.customerId,
       partner_shipping_id: partners.shippingId,
       fiscal_position_id: fiscalPosition.id,
-      client_order_ref: `LoveLeeVA sandbox checkout ${new Date().toISOString()}`,
-      origin: 'LoveLeeVA React checkout — sandbox',
+      client_order_ref: `LoveLeeVA ${checkoutMode} checkout ${new Date().toISOString()}`,
+      origin: `LoveLeeVA React checkout — ${checkoutMode}`,
       order_line: quoteOrderLines(validation.items),
     }],
     context: { lang: DEFAULT_LOCALE },
@@ -418,7 +434,7 @@ export async function createSandboxQuote({ call, payload, products }) {
     },
     fiscalPosition: relationName(order.fiscal_position_id, fiscalPosition.name),
     warning: shippingRate.delivery_message || null,
-    mode: 'sandbox',
+    mode: checkoutMode,
     quotedAt: new Date().toISOString(),
   }
 }

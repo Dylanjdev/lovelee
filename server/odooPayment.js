@@ -65,7 +65,7 @@ async function readQuotationForPayment(call, quotation) {
   return order
 }
 
-async function findSandboxStripeProvider(call) {
+async function findStripeProvider(call, checkoutMode) {
   const providers = await call('payment.provider', 'search_read', {
     domain: [['code', '=', 'stripe'], ['active', '=', true]],
     fields: [
@@ -78,11 +78,14 @@ async function findSandboxStripeProvider(call) {
     limit: 5,
   })
 
-  if (providers.length !== 1 || !providers[0].stripe_publishable_key?.startsWith('pk_test_')) {
-    throw new OdooPaymentError('Odoo Stripe must remain connected in test mode.', {
+  const expectedPrefix = checkoutMode === 'live' ? 'pk_live_' : 'pk_test_'
+  if (providers.length !== 1 || !providers[0].stripe_publishable_key?.startsWith(expectedPrefix)) {
+    throw new OdooPaymentError(
+      `Odoo Stripe must be connected with ${checkoutMode} credentials.`, {
       status: 503,
       code: 'unsafe_payment_configuration',
-    })
+      },
+    )
   }
 
   return providers[0]
@@ -105,7 +108,7 @@ async function findCardPaymentMethod(call) {
   return methods[0]
 }
 
-function validatePaymentTransaction(transaction, order, provider, paymentMethod) {
+function validatePaymentTransaction(transaction, order, provider, paymentMethod, checkoutMode) {
   if (
     !transaction
     || transaction.state !== 'draft'
@@ -115,7 +118,7 @@ function validatePaymentTransaction(transaction, order, provider, paymentMethod)
     || relationId(transaction.currency_id) !== relationId(order.currency_id)
     || money(transaction.amount) !== money(order.amount_total)
     || !transaction.sale_order_ids?.includes(order.id)
-    || transaction.is_live
+    || Boolean(transaction.is_live) !== (checkoutMode === 'live')
   ) {
     throw new OdooPaymentError('Odoo did not return a valid test payment transaction.', {
       code: 'invalid_payment_transaction',
@@ -123,21 +126,21 @@ function validatePaymentTransaction(transaction, order, provider, paymentMethod)
   }
 }
 
-export async function createSandboxPaymentTransaction({ call, quotation }) {
+export async function createCheckoutPaymentTransaction({ call, quotation }) {
   if (
-    quotation?.mode !== 'sandbox'
+    !['sandbox', 'live'].includes(quotation?.mode)
     || !Number.isSafeInteger(quotation?.quotationId)
     || typeof quotation?.reference !== 'string'
     || !quotation.reference
     || quotation.reference.length > MAX_REFERENCE_LENGTH
   ) {
-    throw new OdooPaymentError('A valid sandbox quotation is required for payment.', {
+    throw new OdooPaymentError('A valid checkout quotation is required for payment.', {
       code: 'invalid_payment_quotation',
     })
   }
 
   const order = await readQuotationForPayment(call, quotation)
-  const provider = await findSandboxStripeProvider(call)
+  const provider = await findStripeProvider(call, quotation.mode)
   const paymentMethod = await findCardPaymentMethod(call)
   const createdIds = await call('payment.transaction', 'create', {
     vals_list: [{
@@ -170,7 +173,7 @@ export async function createSandboxPaymentTransaction({ call, quotation }) {
     ],
   })
 
-  validatePaymentTransaction(transaction, order, provider, paymentMethod)
+  validatePaymentTransaction(transaction, order, provider, paymentMethod, quotation.mode)
 
   return {
     transactionId: transaction.id,
@@ -179,7 +182,7 @@ export async function createSandboxPaymentTransaction({ call, quotation }) {
     amount: money(transaction.amount),
     currency: relationName(transaction.currency_id),
     provider: relationName(transaction.provider_id),
-    mode: 'test',
+    mode: quotation.mode,
   }
 }
 
@@ -220,7 +223,7 @@ async function readPaymentAndOrder(call, payment) {
 
 function validatePaidTransaction(payment, transaction, order) {
   if (
-    payment?.mode !== 'test'
+    !['sandbox', 'live'].includes(payment?.mode)
     || !transaction
     || !order
     || transaction.id !== payment.transactionId
@@ -228,7 +231,7 @@ function validatePaidTransaction(payment, transaction, order) {
     || transaction.reference !== payment.reference
     || order.name !== payment.reference
     || transaction.provider_code !== 'stripe'
-    || transaction.is_live
+    || Boolean(transaction.is_live) !== (payment.mode === 'live')
     || !transaction.sale_order_ids?.includes(order.id)
     || !order.transaction_ids?.includes(transaction.id)
     || cents(transaction.amount) !== payment.amount
@@ -247,7 +250,7 @@ function validatePaidTransaction(payment, transaction, order) {
   }
 }
 
-export async function completeSandboxPaymentTransaction({ call, payment }) {
+export async function completeCheckoutPaymentTransaction({ call, payment }) {
   let { transaction, order } = await readPaymentAndOrder(call, payment)
   validatePaidTransaction(payment, transaction, order)
 
@@ -293,6 +296,6 @@ export async function completeSandboxPaymentTransaction({ call, payment }) {
     deliveryCreated: Boolean(order.picking_ids?.length),
     invoiceCreated: Boolean(order.invoice_ids?.length),
     portal,
-    mode: 'test',
+    mode: payment.mode,
   }
 }

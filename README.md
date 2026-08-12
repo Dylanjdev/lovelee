@@ -28,6 +28,7 @@ For local checkout testing, add Stripe test keys and the Odoo RPC key to
 ```dotenv
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_SECRET_KEY=sk_test_...
+CHECKOUT_MODE=sandbox
 ODOO_URL=https://your-company.odoo.com
 ODOO_API_KEY=...
 ```
@@ -41,10 +42,14 @@ create the delivery, and run payment post-processing. After confirmation, Odoo
 creates a portal user when needed and emails the customer an invitation so they
 can view confirmed orders at `https://lovelee.odoo.com/my/orders`. A checkout
 email cannot also be the login for an existing internal Odoo user; use a unique
-customer email when testing portal invitations. It requires AvaTax
-Sandbox with commits disabled, UPS test mode, and an Odoo Stripe provider using
-the same Stripe test account. Production quotation creation stays disabled
-unless the Worker variable `CHECKOUT_ENABLED=true` is explicitly configured.
+customer email when testing portal invitations.
+
+`CHECKOUT_MODE=sandbox` requires AvaTax Sandbox with commits disabled, UPS Test
+Environment, and matching Stripe test keys in Odoo, Vite, and the server.
+`CHECKOUT_MODE=live` requires AvaTax Production with commits enabled, UPS
+Production Environment, and matching Stripe live keys. The Worker requires an
+explicit mode and still refuses checkout mutations unless
+`CHECKOUT_ENABLED=true` is separately configured.
 
 ## Checks
 

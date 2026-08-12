@@ -2,16 +2,16 @@ import { cwd } from 'node:process'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { CheckoutValidationError, validateCartPricing } from './server/checkoutValidation.js'
-import { createSandboxQuote, OdooCheckoutError } from './server/odooCheckout.js'
+import { createCheckoutQuote, OdooCheckoutError } from './server/odooCheckout.js'
 import {
-  completeSandboxPaymentTransaction,
-  createSandboxPaymentTransaction,
+  completeCheckoutPaymentTransaction,
+  createCheckoutPaymentTransaction,
   OdooPaymentError,
 } from './server/odooPayment.js'
 import {
-  createSandboxPaymentIntent,
+  createCheckoutPaymentIntent,
   StripeCheckoutError,
-  verifySandboxPaymentIntent,
+  verifyCheckoutPaymentIntent,
 } from './server/stripeCheckout.js'
 
 function readJsonBody(request, maxLength = 32_768) {
@@ -101,6 +101,7 @@ async function getLiveCatalog() {
 
 function localCheckoutApi(runtimeEnv) {
   const odooCall = createOdooCall(runtimeEnv)
+  const checkoutMode = runtimeEnv.CHECKOUT_MODE || 'sandbox'
 
   return {
     name: 'lovelee-local-checkout-api',
@@ -153,16 +154,17 @@ function localCheckoutApi(runtimeEnv) {
 
         try {
           const [payload, catalog] = await Promise.all([readJsonBody(request), getLiveCatalog()])
-          const quotation = await createSandboxQuote({
+          const quotation = await createCheckoutQuote({
             call: odooCall,
             payload,
             products: catalog.products,
+            checkoutMode,
           })
-          const odooTransaction = await createSandboxPaymentTransaction({
+          const odooTransaction = await createCheckoutPaymentTransaction({
             call: odooCall,
             quotation,
           })
-          const payment = await createSandboxPaymentIntent({
+          const payment = await createCheckoutPaymentIntent({
             secretKey: runtimeEnv.STRIPE_SECRET_KEY,
             quotation,
             odooTransaction,
@@ -196,7 +198,7 @@ function localCheckoutApi(runtimeEnv) {
 
           console.error('Local Odoo quotation failed', error)
           sendJson(response, 502, {
-            error: 'Odoo could not create the sandbox quotation. No payment was attempted.',
+            error: 'Odoo could not create the checkout quotation. No payment was attempted.',
           })
         }
       })
@@ -209,11 +211,12 @@ function localCheckoutApi(runtimeEnv) {
 
         try {
           const payload = await readJsonBody(request, 4_096)
-          const payment = await verifySandboxPaymentIntent({
+          const payment = await verifyCheckoutPaymentIntent({
             secretKey: runtimeEnv.STRIPE_SECRET_KEY,
             paymentIntentId: payload?.paymentIntentId,
+            checkoutMode,
           })
-          const order = await completeSandboxPaymentTransaction({
+          const order = await completeCheckoutPaymentTransaction({
             call: odooCall,
             payment,
           })

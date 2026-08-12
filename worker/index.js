@@ -1,14 +1,14 @@
 import { CheckoutValidationError, validateCartPricing } from '../server/checkoutValidation.js'
-import { createSandboxQuote, OdooCheckoutError } from '../server/odooCheckout.js'
+import { createCheckoutQuote, OdooCheckoutError } from '../server/odooCheckout.js'
 import {
-  completeSandboxPaymentTransaction,
-  createSandboxPaymentTransaction,
+  completeCheckoutPaymentTransaction,
+  createCheckoutPaymentTransaction,
   OdooPaymentError,
 } from '../server/odooPayment.js'
 import {
-  createSandboxPaymentIntent,
+  createCheckoutPaymentIntent,
   StripeCheckoutError,
-  verifySandboxPaymentIntent,
+  verifyCheckoutPaymentIntent,
 } from '../server/stripeCheckout.js'
 
 const ODOO_PRODUCT_FIELDS = [
@@ -41,6 +41,14 @@ function normalizeOdooUrl(value) {
   if (url.protocol !== 'https:') throw new Error('ODOO_URL must use HTTPS.')
 
   return url.origin
+}
+
+function checkoutMode(env) {
+  if (!['sandbox', 'live'].includes(env.CHECKOUT_MODE)) {
+    throw new Error('CHECKOUT_MODE must be explicitly set to sandbox or live.')
+  }
+
+  return env.CHECKOUT_MODE
 }
 
 async function odooCall(env, model, method, body) {
@@ -307,16 +315,18 @@ async function handleApiRequest(request, env, url) {
 
     try {
       const products = await getProducts(env)
-      const quotation = await createSandboxQuote({
+      const mode = checkoutMode(env)
+      const quotation = await createCheckoutQuote({
         call: (model, method, body) => odooCall(env, model, method, body),
         payload,
         products,
+        checkoutMode: mode,
       })
-      const odooTransaction = await createSandboxPaymentTransaction({
+      const odooTransaction = await createCheckoutPaymentTransaction({
         call: (model, method, body) => odooCall(env, model, method, body),
         quotation,
       })
-      const payment = await createSandboxPaymentIntent({
+      const payment = await createCheckoutPaymentIntent({
         secretKey: env.STRIPE_SECRET_KEY,
         quotation,
         odooTransaction,
@@ -365,11 +375,13 @@ async function handleApiRequest(request, env, url) {
     }
 
     try {
-      const payment = await verifySandboxPaymentIntent({
+      const mode = checkoutMode(env)
+      const payment = await verifyCheckoutPaymentIntent({
         secretKey: env.STRIPE_SECRET_KEY,
         paymentIntentId: payload?.paymentIntentId,
+        checkoutMode: mode,
       })
-      const order = await completeSandboxPaymentTransaction({
+      const order = await completeCheckoutPaymentTransaction({
         call: (model, method, body) => odooCall(env, model, method, body),
         payment,
       })

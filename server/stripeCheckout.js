@@ -27,18 +27,30 @@ function paymentAmountInCents(total) {
   return amount
 }
 
-export async function createSandboxPaymentIntent({
+function assertStripeMode(secretKey, checkoutMode) {
+  if (!['sandbox', 'live'].includes(checkoutMode)) {
+    throw new StripeCheckoutError('Checkout mode is not configured.', {
+      status: 503,
+      code: 'unsafe_payment_configuration',
+    })
+  }
+
+  const expectedPrefix = checkoutMode === 'live' ? 'sk_live_' : 'sk_test_'
+  if (!secretKey?.startsWith(expectedPrefix)) {
+    throw new StripeCheckoutError(`Stripe must use ${checkoutMode} credentials.`, {
+      status: 503,
+      code: 'unsafe_payment_configuration',
+    })
+  }
+}
+
+export async function createCheckoutPaymentIntent({
   secretKey,
   quotation,
   odooTransaction,
   email,
 }) {
-  if (!secretKey?.startsWith('sk_test_')) {
-    throw new StripeCheckoutError('Stripe must use a test secret key for local checkout testing.', {
-      status: 503,
-      code: 'unsafe_payment_configuration',
-    })
-  }
+  assertStripeMode(secretKey, quotation?.mode)
 
   const amount = paymentAmountInCents(quotation.total)
   const currency = String(quotation.currency || 'USD').toLowerCase()
@@ -48,7 +60,7 @@ export async function createSandboxPaymentIntent({
     !Number.isSafeInteger(odooTransaction?.transactionId)
     || !odooTransaction?.reference
     || odooTransaction.state !== 'draft'
-    || odooTransaction.mode !== 'test'
+    || odooTransaction.mode !== quotation.mode
     || paymentAmountInCents(odooTransaction.amount) !== amount
     || String(odooTransaction.currency).toLowerCase() !== currency
   ) {
@@ -68,7 +80,7 @@ export async function createSandboxPaymentIntent({
         receipt_email: email,
         metadata: {
           integration: 'loveleeva_headless',
-          environment: 'sandbox',
+          environment: quotation.mode,
           odoo_quotation_id: String(quotation.quotationId),
           odoo_reference: quotation.reference,
           odoo_payment_transaction_id: String(odooTransaction.transactionId),
@@ -76,12 +88,12 @@ export async function createSandboxPaymentIntent({
         },
       },
       {
-        idempotencyKey: `loveleeva-sandbox-quotation-${quotation.quotationId}`,
+        idempotencyKey: `loveleeva-${quotation.mode}-quotation-${quotation.quotationId}`,
       },
     )
 
-    if (intent.livemode || !intent.client_secret) {
-      throw new StripeCheckoutError('Stripe did not return a safe test payment session.', {
+    if (intent.livemode !== (quotation.mode === 'live') || !intent.client_secret) {
+      throw new StripeCheckoutError('Stripe did not return a payment session for the configured mode.', {
         code: 'unsafe_payment_configuration',
       })
     }
@@ -91,7 +103,7 @@ export async function createSandboxPaymentIntent({
       paymentIntentId: intent.id,
       amount: intent.amount,
       currency: intent.currency.toUpperCase(),
-      mode: 'test',
+      mode: quotation.mode,
     }
   } catch (error) {
     if (error instanceof StripeCheckoutError) throw error
@@ -99,13 +111,8 @@ export async function createSandboxPaymentIntent({
   }
 }
 
-export async function verifySandboxPaymentIntent({ secretKey, paymentIntentId }) {
-  if (!secretKey?.startsWith('sk_test_')) {
-    throw new StripeCheckoutError('Stripe must use a test secret key for local checkout testing.', {
-      status: 503,
-      code: 'unsafe_payment_configuration',
-    })
-  }
+export async function verifyCheckoutPaymentIntent({ secretKey, paymentIntentId, checkoutMode }) {
+  assertStripeMode(secretKey, checkoutMode)
 
   if (
     typeof paymentIntentId !== 'string'
@@ -132,10 +139,10 @@ export async function verifySandboxPaymentIntent({ secretKey, paymentIntentId })
   const reference = intent.metadata?.odoo_payment_transaction_reference
 
   if (
-    intent.livemode
+    intent.livemode !== (checkoutMode === 'live')
     || intent.status !== 'succeeded'
     || intent.metadata?.integration !== 'loveleeva_headless'
-    || intent.metadata?.environment !== 'sandbox'
+    || intent.metadata?.environment !== checkoutMode
     || !Number.isSafeInteger(quotationId)
     || quotationId <= 0
     || !Number.isSafeInteger(transactionId)
@@ -159,6 +166,6 @@ export async function verifySandboxPaymentIntent({ secretKey, paymentIntentId })
     reference,
     amount: intent.amount,
     currency: intent.currency.toUpperCase(),
-    mode: 'test',
+    mode: checkoutMode,
   }
 }

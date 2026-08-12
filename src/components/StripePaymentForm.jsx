@@ -4,7 +4,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { formatMoney } from '../lib/products.js'
 
 const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-const stripePromise = publishableKey?.startsWith('pk_test_')
+const stripePromise = /^pk_(test|live)_/.test(publishableKey || '')
   ? loadStripe(publishableKey)
   : null
 
