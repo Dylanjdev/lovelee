@@ -46,9 +46,10 @@ customer email when testing portal invitations.
 
 `CHECKOUT_MODE=sandbox` requires AvaTax Sandbox with commits disabled, UPS Test
 Environment, and matching Stripe test keys in Odoo, Vite, and the server.
-`CHECKOUT_MODE=live` requires AvaTax Production with commits enabled, UPS
-Production Environment, and matching Stripe live keys. The Worker requires an
-explicit mode and still refuses checkout mutations unless
+`CHECKOUT_MODE=live` requires AvaTax Production (for Avalara Direct) or a
+connected Avalara Included account, with transaction commits enabled. It also
+requires UPS Production Environment and matching Stripe live keys. The Worker
+requires an explicit mode and still refuses checkout mutations unless
 `CHECKOUT_ENABLED=true` is separately configured.
 
 ## Checks

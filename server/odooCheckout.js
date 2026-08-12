@@ -146,17 +146,24 @@ async function assertCheckoutConfiguration(call, checkoutMode) {
 
   const expectedEnvironment = checkoutMode === 'live' ? 'production' : 'sandbox'
   const expectedCommit = checkoutMode === 'live'
+  const usesAvalaraIncluded = company?.avalara_connection_method === 'iap'
+  const connectionIsInvalid = usesAvalaraIncluded
+    ? !company.avalara_iap_connected
+    : company?.avalara_environment !== expectedEnvironment
 
   if (
     !company
-    || company.avalara_environment !== expectedEnvironment
+    || connectionIsInvalid
     || Boolean(company.avalara_commit) !== expectedCommit
-    || (company.avalara_connection_method === 'iap' && !company.avalara_iap_connected)
   ) {
     throw new OdooCheckoutError(
       checkoutMode === 'live'
-        ? 'Odoo AvaTax must use Production with transaction commits enabled for live checkout.'
-        : 'Odoo AvaTax must use Sandbox with transaction commits disabled for checkout testing.',
+        ? usesAvalaraIncluded
+          ? 'Odoo Avalara Included must be connected with transaction commits enabled for live checkout.'
+          : 'Odoo AvaTax must use Production with transaction commits enabled for live checkout.'
+        : usesAvalaraIncluded
+          ? 'Odoo Avalara Included must be connected with transaction commits disabled for checkout testing.'
+          : 'Odoo AvaTax must use Sandbox with transaction commits disabled for checkout testing.',
       { status: 503, code: 'unsafe_tax_configuration' },
     )
   }
