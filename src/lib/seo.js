@@ -31,9 +31,9 @@ export const seoPages = [
   },
   {
     path: '/explore-lee-county',
-    label: 'Explore Lee County',
-    title: 'Lee County VA Tourism & Local Discovery | LoveLeeVa',
-    description: 'Discover Lee County, Virginia through Appalachian events, local businesses, handmade goods, community experiences, and rural tourism.',
+    label: 'Tourism in Lee County',
+    title: 'U.S. Travel Guide to Lee County, Virginia | LoveLeeVa',
+    description: 'Plan a U.S. road trip or getaway to Lee County, Virginia with Appalachian history, mountain scenery, local businesses, community events, and authentic Southwest Virginia experiences.',
     index: true,
   },
   {

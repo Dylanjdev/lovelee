@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import CartDrawer from './CartDrawer.jsx'
 import logoImg from '../assets/OurLoveLeeLogoGray.webp'
 import { useCart } from '../lib/cartContext.js'
@@ -30,24 +30,30 @@ const MenuIcon = () => (
 export default function Nav() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isGuideOpen, setIsGuideOpen] = useState(false)
   const cartButtonRef = useRef(null)
   const menuButtonRef = useRef(null)
   const navRef = useRef(null)
+  const location = useLocation()
   const { itemCount } = useCart()
   const closeCart = useCallback(() => setIsCartOpen(false), [])
 
   useEffect(() => {
-    if (!isMenuOpen) return undefined
+    if (!isMenuOpen && !isGuideOpen) return undefined
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsMenuOpen(false)
+        setIsGuideOpen(false)
         menuButtonRef.current?.focus()
       }
     }
 
     const handlePointerDown = (event) => {
-      if (!navRef.current?.contains(event.target)) setIsMenuOpen(false)
+      if (!navRef.current?.contains(event.target)) {
+        setIsMenuOpen(false)
+        setIsGuideOpen(false)
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -57,7 +63,7 @@ export default function Nav() {
       window.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('pointerdown', handlePointerDown)
     }
-  }, [isMenuOpen])
+  }, [isMenuOpen, isGuideOpen])
 
   return (
     <>
@@ -86,7 +92,21 @@ export default function Nav() {
             <li><NavLink to="/about/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>About Us</NavLink></li>
             <li><NavLink to="/shop/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Shop</NavLink></li>
             <li><NavLink to="/directory/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Directory</NavLink></li>
-            <li><NavLink to="/lee-county-virginia-guide/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Local Guide</NavLink></li>
+            <li className={`nav__dropdown${isGuideOpen ? ' nav__dropdown--open' : ''}`}>
+              <button
+                type="button"
+                className={`nav__link nav__dropdown-toggle${location.pathname.startsWith('/lee-county-virginia-guide') || location.pathname.startsWith('/explore-lee-county') ? ' nav__link--active' : ''}`}
+                aria-expanded={isGuideOpen}
+                aria-controls="local-guide-menu"
+                onClick={() => setIsGuideOpen((isOpen) => !isOpen)}
+              >
+                Local Guide <span className="nav__dropdown-arrow" aria-hidden="true">▾</span>
+              </button>
+              <ul id="local-guide-menu" className="nav__dropdown-menu">
+                <li><NavLink to="/lee-county-virginia-guide/" onClick={() => { setIsMenuOpen(false); setIsGuideOpen(false) }} className={({ isActive }) => isActive ? 'nav__dropdown-link nav__dropdown-link--active' : 'nav__dropdown-link'}>Lee County Guide</NavLink></li>
+                <li><NavLink to="/explore-lee-county/" onClick={() => { setIsMenuOpen(false); setIsGuideOpen(false) }} className={({ isActive }) => isActive ? 'nav__dropdown-link nav__dropdown-link--active' : 'nav__dropdown-link'}>Tourism in Lee County</NavLink></li>
+              </ul>
+            </li>
             <li><NavLink to="/calendar/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Calendar</NavLink></li>
             <li><NavLink to="/contact/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Contact Us</NavLink></li>
             <li><NavLink to="/customized/" onClick={() => setIsMenuOpen(false)} className={({ isActive }) => isActive ? 'nav__link nav__link--active' : 'nav__link'}>Customized</NavLink></li>
