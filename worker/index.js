@@ -216,9 +216,15 @@ async function getProductImage(env, productId) {
   }
 
   const bytes = decodeBase64(encodedImage)
+  const imageStream = new Response(bytes).body
+
+  if (!imageStream) {
+    throw new Error('Odoo returned an unreadable product image.')
+  }
+
   const optimizedImage = (
     await env.IMAGES
-      .input(bytes)
+      .input(imageStream)
       .transform({ width: 640 })
       .output({ format: 'image/webp', quality: 80 })
   ).response()
