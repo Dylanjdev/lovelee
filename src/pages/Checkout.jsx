@@ -3,7 +3,12 @@ import { Link } from 'react-router-dom'
 import ProductVisual from '../components/ProductVisual.jsx'
 import StripePaymentForm from '../components/StripePaymentForm.jsx'
 import { useCart } from '../lib/cartContext.js'
-import { completeCheckoutOrder } from '../lib/checkoutCompletion.js'
+import {
+  completeCheckoutOrder,
+  forgetPendingCheckoutPayment,
+  readPendingCheckoutPayment,
+  rememberPendingCheckoutPayment,
+} from '../lib/checkoutCompletion.js'
 import { formatMoney } from '../lib/products.js'
 
 const customerSafeErrorCodes = new Set([
@@ -70,29 +75,51 @@ export default function Checkout() {
 
   useEffect(() => {
     const search = new URLSearchParams(window.location.search)
-    const paymentIntentId = search.get('payment_intent')
-    if (search.get('stripe_return') !== '1' || !paymentIntentId) return
+    const returnedPaymentIntentId = search.get('stripe_return') === '1'
+      ? search.get('payment_intent')
+      : ''
+    const paymentIntentId = returnedPaymentIntentId || readPendingCheckoutPayment()
 
-    window.history.replaceState({}, '', '/checkout/')
-    setReturnPayment({
-      paymentIntentId,
-      status: 'processing',
-      message: 'Your payment was received. We are confirming your order…',
-    })
+    if (returnedPaymentIntentId) {
+      window.history.replaceState({}, '', '/checkout/')
+    }
 
-    completeCheckoutOrder(paymentIntentId)
+    if (!paymentIntentId) return undefined
+
+    rememberPendingCheckoutPayment(paymentIntentId)
+    const timeoutId = window.setTimeout(() => {
+      setReturnPayment({
+        paymentIntentId,
+        status: 'processing',
+        message: 'Your payment was received. We are confirming your order…',
+      })
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [])
+
+  useEffect(() => {
+    if (!returnPayment.paymentIntentId || returnPayment.status !== 'processing') return undefined
+
+    const controller = new AbortController()
+
+    completeCheckoutOrder(returnPayment.paymentIntentId, { signal: controller.signal })
       .then((order) => {
+        forgetPendingCheckoutPayment()
         setCompletedOrder(order)
         clearCart()
       })
       .catch((error) => {
+        if (controller.signal.aborted) return
         setReturnPayment({
-          paymentIntentId,
+          paymentIntentId: returnPayment.paymentIntentId,
           status: 'error',
-          message: error.message || 'Your payment is still being confirmed.',
+          message: error.message || 'Your payment is taking longer than expected to confirm.',
         })
       })
-  }, [clearCart])
+
+    return () => controller.abort()
+  }, [clearCart, returnPayment.paymentIntentId, returnPayment.status])
 
   useEffect(() => () => {
     window.clearTimeout(automaticQuoteTimerRef.current)
@@ -210,12 +237,16 @@ export default function Checkout() {
     calculateQuote(form)
   }
 
-  function handlePaymentComplete(order) {
-    setCompletedOrder(order)
-    clearCart()
+  function handlePaymentPending(paymentIntentId) {
+    rememberPendingCheckoutPayment(paymentIntentId)
+    setReturnPayment({
+      paymentIntentId,
+      status: 'processing',
+      message: 'Payment received. We are confirming your order…',
+    })
   }
 
-  async function retryReturnedPayment() {
+  function retryReturnedPayment() {
     if (!returnPayment.paymentIntentId) return
 
     setReturnPayment((current) => ({
@@ -223,18 +254,6 @@ export default function Checkout() {
       status: 'processing',
       message: 'Checking your confirmed payment…',
     }))
-
-    try {
-      const order = await completeCheckoutOrder(returnPayment.paymentIntentId)
-      setCompletedOrder(order)
-      clearCart()
-    } catch (error) {
-      setReturnPayment((current) => ({
-        ...current,
-        status: 'error',
-        message: error.message || 'Your payment is still being confirmed.',
-      }))
-    }
   }
 
   const verifiedSubtotal = pricingTest.result?.subtotal ?? subtotal
@@ -575,7 +594,7 @@ export default function Checkout() {
               {pricingTest.result?.payment ? (
                 <StripePaymentForm
                   payment={pricingTest.result.payment}
-                  onComplete={handlePaymentComplete}
+                  onPaymentPending={handlePaymentPending}
                 />
               ) : null}
             </fieldset>

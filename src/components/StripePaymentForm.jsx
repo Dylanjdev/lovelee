@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { completeCheckoutOrder } from '../lib/checkoutCompletion.js'
 import { formatMoney } from '../lib/products.js'
 
 const stripePromises = new Map()
@@ -29,7 +28,7 @@ const appearance = {
   },
 }
 
-function CheckoutPaymentElement({ payment, onComplete }) {
+function CheckoutPaymentElement({ payment, onPaymentPending }) {
   const stripe = useStripe()
   const elements = useElements()
   const [status, setStatus] = useState({ state: 'idle', message: '', order: null })
@@ -67,30 +66,19 @@ function CheckoutPaymentElement({ payment, onComplete }) {
       return
     }
 
-    if (paymentIntent?.status === 'succeeded') {
-      try {
-        const order = await completeCheckoutOrder(paymentIntent.id)
-        setStatus({
-          state: 'success',
-          message: `Payment approved. Order ${order.reference} is confirmed.`,
-          order,
-        })
-        onComplete(order)
-      } catch (completionError) {
-        setStatus({
-          state: 'processing',
-          message: completionError.message,
-          order: null,
-        })
-      }
+    if (['succeeded', 'processing'].includes(paymentIntent?.status)) {
+      setStatus({
+        state: 'processing',
+        message: 'Payment received. We are confirming your order…',
+        order: null,
+      })
+      onPaymentPending(paymentIntent.id)
       return
     }
 
     setStatus({
-      state: 'success',
-      message: paymentIntent?.status === 'processing'
-        ? 'Your payment is processing. We will confirm your order as soon as it is complete.'
-        : 'Your payment was received and is being finalized.',
+      state: 'error',
+      message: 'Stripe could not finish the payment. Please review your details and try again.',
       order: null,
     })
   }
@@ -149,7 +137,7 @@ function CheckoutPaymentElement({ payment, onComplete }) {
   )
 }
 
-export default function StripePaymentForm({ payment, onComplete }) {
+export default function StripePaymentForm({ payment, onPaymentPending }) {
   const stripePromise = stripeForPayment(payment)
 
   if (!stripePromise) {
@@ -169,7 +157,7 @@ export default function StripePaymentForm({ payment, onComplete }) {
         appearance,
       }}
     >
-      <CheckoutPaymentElement payment={payment} onComplete={onComplete} />
+      <CheckoutPaymentElement payment={payment} onPaymentPending={onPaymentPending} />
     </Elements>
   )
 }
