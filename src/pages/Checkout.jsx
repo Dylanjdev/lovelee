@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import ProductVisual from '../components/ProductVisual.jsx'
 import StripePaymentForm from '../components/StripePaymentForm.jsx'
 import { useCart } from '../lib/cartContext.js'
+import { useCatalog } from '../lib/catalogContext.js'
 import {
   completeCheckoutOrder,
   forgetPendingCheckoutPayment,
@@ -35,8 +36,10 @@ const requiredQuoteFieldNames = [...quoteFieldNames].filter((name) => name !== '
 const automaticQuoteDelay = 1_000
 
 export default function Checkout() {
-  const { items, itemCount, subtotal, clearCart } = useCart()
+  const { products } = useCatalog()
+  const { items, itemCount, subtotal, addItem, clearCart } = useCart()
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true)
+  const [scraperUpsellDismissed, setScraperUpsellDismissed] = useState(false)
   const [pricingTest, setPricingTest] = useState({
     status: 'idle',
     message: '',
@@ -55,6 +58,21 @@ export default function Checkout() {
   const checkoutFormRef = useRef(null)
   const automaticQuoteTimerRef = useRef(null)
   const quoteRequestIdRef = useRef(0)
+  const scraperUpsellButtonRef = useRef(null)
+
+  const scraperUpsellProduct = products.find((product) => (
+    Math.abs(product.price - 7) < 0.001
+    && /(?:scraper|scarper)/i.test(product.name)
+  ))
+  const cartHasScraper = items.some((item) => item.product.id === scraperUpsellProduct?.id)
+  const showScraperUpsell = Boolean(
+    !scraperUpsellDismissed
+    && scraperUpsellProduct?.inventoryCount > 0
+    && items.length
+    && !cartHasScraper
+    && !completedOrder
+    && returnPayment.status === 'idle',
+  )
 
   useEffect(() => {
     let isActive = true
@@ -125,6 +143,27 @@ export default function Checkout() {
     window.clearTimeout(automaticQuoteTimerRef.current)
     quoteRequestIdRef.current += 1
   }, [])
+
+  useEffect(() => {
+    if (!showScraperUpsell) return undefined
+
+    const previouslyFocusedElement = document.activeElement
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    scraperUpsellButtonRef.current?.focus()
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') setScraperUpsellDismissed(true)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      previouslyFocusedElement?.focus?.()
+    }
+  }, [showScraperUpsell])
 
   function quoteFieldsAreReady(form) {
     return requiredQuoteFieldNames.every((name) => {
@@ -246,6 +285,13 @@ export default function Checkout() {
     })
   }
 
+  function addRandomizedScraper() {
+    if (!scraperUpsellProduct) return
+
+    addItem(scraperUpsellProduct.id)
+    setScraperUpsellDismissed(true)
+  }
+
   function retryReturnedPayment() {
     if (!returnPayment.paymentIntentId) return
 
@@ -364,6 +410,57 @@ export default function Checkout() {
 
   return (
     <>
+      {showScraperUpsell ? (
+        <div className="checkout-upsell" role="presentation">
+          <div
+            className="checkout-upsell__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="scraper-upsell-title"
+            aria-describedby="scraper-upsell-description"
+          >
+            <button
+              type="button"
+              className="checkout-upsell__close"
+              aria-label="No thanks, close scraper offer"
+              onClick={() => setScraperUpsellDismissed(true)}
+            >
+              ×
+            </button>
+            <ProductVisual
+              product={scraperUpsellProduct}
+              className="checkout-upsell__visual"
+              eager
+            />
+            <div className="checkout-upsell__content">
+              <p className="section-label">A little something extra</p>
+              <h2 id="scraper-upsell-title">Do you want a randomized scraper for $7?</h2>
+              <p id="scraper-upsell-description">
+                Add one handmade scraper, selected at random from the available batch,
+                to your order.
+              </p>
+              <div className="checkout-upsell__actions">
+                <button
+                  ref={scraperUpsellButtonRef}
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={addRandomizedScraper}
+                >
+                  Yes, add one — $7
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => setScraperUpsellDismissed(true)}
+                >
+                  No thanks
+                </button>
+              </div>
+              <small>Only one will be added. Shipping and tax update automatically.</small>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <section className="page-hero page-hero--checkout">
         <div className="page-hero__noise" aria-hidden="true" />
         <div className="page-hero__content">

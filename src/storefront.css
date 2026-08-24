@@ -1591,6 +1591,121 @@
   color: var(--muted);
 }
 
+.checkout-upsell {
+  position: fixed;
+  z-index: 180;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(14, 26, 19, 0.76);
+  backdrop-filter: blur(8px);
+  animation: storefront-fade-in 180ms ease both;
+}
+
+.checkout-upsell__dialog {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(300px, 1.15fr);
+  width: min(820px, 100%);
+  max-height: calc(100svh - 2rem);
+  overflow: auto;
+  border: 1px solid rgba(216, 164, 81, 0.7);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.35);
+  animation: cart-modal-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.checkout-upsell__close {
+  position: absolute;
+  z-index: 2;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255, 249, 235, 0.35);
+  border-radius: 999px;
+  background: rgba(25, 61, 43, 0.94);
+  color: var(--paper);
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.checkout-upsell__visual {
+  min-height: 390px;
+  border-radius: 11px 0 0 11px;
+}
+
+.checkout-upsell__content {
+  align-self: center;
+  padding: clamp(2.5rem, 6vw, 4rem);
+}
+
+.checkout-upsell__content h2 {
+  margin: 0.4rem 0 0;
+  color: var(--forest);
+  font-family: var(--serif);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 500;
+  line-height: 1.03;
+}
+
+.checkout-upsell__content > p:not(.section-label) {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.checkout-upsell__actions {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+}
+
+.checkout-upsell__actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.checkout-upsell__actions .btn--ghost {
+  border: 1px solid var(--forest);
+  color: var(--forest);
+}
+
+.checkout-upsell__content small {
+  display: block;
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 680px) {
+  .checkout-upsell__dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-upsell__visual {
+    min-height: 210px;
+    max-height: 32svh;
+    border-radius: 11px 11px 0 0;
+  }
+
+  .checkout-upsell__content {
+    padding: 1.75rem 1.35rem 1.5rem;
+  }
+
+  .checkout-upsell__content h2 {
+    padding-right: 1.5rem;
+    font-size: clamp(1.8rem, 9vw, 2.5rem);
+  }
+}
+
 .checkout-form__submit {
   display: flex;
   width: 100%;
