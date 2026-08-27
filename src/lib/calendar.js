@@ -2,6 +2,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '')
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
 export const isCalendarConfigured = Boolean(supabaseUrl && publishableKey)
+export const calendarFeedUrl = import.meta.env.VITE_CALENDAR_FEED_URL?.trim()
+  || (supabaseUrl ? `${supabaseUrl}/functions/v1/calendar-feed` : '')
 
 const authHeaders = {
   apikey: publishableKey ?? '',

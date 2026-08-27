@@ -22,6 +22,11 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 Only use a Supabase publishable key in the Vite client. Never place a secret or
 service-role key in a `VITE_` environment variable.
 
+The Community Calendar reads published events from that same project. Its
+subscription controls derive the live iCalendar feed URL from
+`VITE_SUPABASE_URL`, so no additional key is required. Set
+`VITE_CALENDAR_FEED_URL` only if the feed is moved to a custom domain.
+
 For local checkout testing, add Stripe test keys and the Odoo RPC key to
 `.env.local`:
 

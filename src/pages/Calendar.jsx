@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  calendarFeedUrl,
   getPublishedEvents,
   isCalendarConfigured,
   submitCalendarEvent,
@@ -208,6 +209,76 @@ function UpcomingEvent({ event, onSelect }) {
   )
 }
 
+function CalendarSubscription({ feedUrl, onClose }) {
+  const [copyStatus, setCopyStatus] = useState('')
+  const webcalUrl = feedUrl.replace(/^https?:\/\//i, 'webcal://')
+  const googleSubscriptionUrl = new URL('https://calendar.google.com/calendar/u/0/r')
+  googleSubscriptionUrl.searchParams.set('cid', webcalUrl)
+  const googleAccountChooserUrl = new URL('https://accounts.google.com/AccountChooser')
+  googleAccountChooserUrl.searchParams.set('continue', googleSubscriptionUrl.href)
+  const googleCalendarUrl = googleAccountChooserUrl.href
+
+  async function copyFeedUrl() {
+    setCopyStatus('')
+
+    try {
+      await navigator.clipboard.writeText(feedUrl)
+      setCopyStatus('Subscription link copied.')
+    } catch {
+      const temporaryField = document.createElement('textarea')
+      temporaryField.value = feedUrl
+      temporaryField.setAttribute('readonly', '')
+      temporaryField.style.position = 'fixed'
+      temporaryField.style.opacity = '0'
+      document.body.appendChild(temporaryField)
+      temporaryField.select()
+      const copied = document.execCommand('copy')
+      temporaryField.remove()
+      setCopyStatus(copied ? 'Subscription link copied.' : 'Select and copy the URL below.')
+    }
+  }
+
+  return (
+    <section className="calendar-subscription" id="calendar-subscription" aria-labelledby="calendar-subscription-title">
+      <div className="calendar-subscription__heading">
+        <div>
+          <p className="section-label">Automatic Event Updates</p>
+          <h2 id="calendar-subscription-title">Subscribe to the Lee County calendar.</h2>
+          <p>Add this live calendar once. Newly published events and schedule changes will sync whenever your calendar app refreshes its subscriptions.</p>
+        </div>
+        <button className="calendar-subscription__close" type="button" aria-label="Close calendar subscription" onClick={onClose}>×</button>
+      </div>
+
+      <div className="calendar-subscription__actions">
+        <a className="btn btn--primary" href={webcalUrl}>Apple Calendar</a>
+        <a className="btn btn--ghost" href={googleCalendarUrl} target="_blank" rel="noreferrer">Google Calendar</a>
+        <button className="btn btn--ghost" type="button" onClick={copyFeedUrl}>Copy for Outlook</button>
+      </div>
+
+      <label className="calendar-subscription__url" htmlFor="calendar-subscription-url">
+        Calendar subscription URL
+      </label>
+      <div className="calendar-subscription__url-row">
+        <input
+          id="calendar-subscription-url"
+          type="url"
+          value={feedUrl}
+          readOnly
+          onFocus={(focusEvent) => focusEvent.target.select()}
+        />
+        <button type="button" onClick={copyFeedUrl}>Copy</button>
+      </div>
+
+      {copyStatus && <p className="calendar-subscription__status" role="status">{copyStatus}</p>}
+      <p className="calendar-subscription__help">
+        If Google does not add it directly, choose <strong>Other calendars</strong>, then
+        <strong> From URL</strong> on a computer. In Outlook, choose <strong>Add calendar</strong>,
+        then <strong>Subscribe from web</strong>. Refresh timing is controlled by each calendar provider.
+      </p>
+    </section>
+  )
+}
+
 export default function Calendar() {
   const todayParts = useMemo(() => easternDateParts(), [])
   const [monthDate, setMonthDate] = useState(() => new Date(todayParts.year, todayParts.month - 1, 1))
@@ -220,6 +291,20 @@ export default function Calendar() {
   const [allDay, setAllDay] = useState(false)
   const [submitStatus, setSubmitStatus] = useState('idle')
   const [submitMessage, setSubmitMessage] = useState('')
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false)
+
+  useEffect(() => {
+    if (!subscriptionOpen) return undefined
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      document.getElementById('calendar-subscription')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [subscriptionOpen])
 
   const calendarDays = useMemo(() => getCalendarDays(monthDate), [monthDate])
   const visibleMonth = monthDate.getMonth()
@@ -356,12 +441,28 @@ export default function Calendar() {
             <h1 className="page-hero__headline">Lee County Community Calendar</h1>
             <p className="page-hero__lede">Find Appalachian festivals, live music, family fun, public meetings, and more for residents and visitors exploring rural Virginia.</p>
           </div>
-          <a className="btn btn--copper" href="#submit-an-event">Submit an Event</a>
+          <div className="calendar-hero__actions">
+            <button
+              className="btn btn--ghost"
+              type="button"
+              aria-expanded={subscriptionOpen}
+              aria-controls="calendar-subscription"
+              disabled={!calendarFeedUrl}
+              onClick={() => setSubscriptionOpen((open) => !open)}
+            >
+              {subscriptionOpen ? 'Close Subscription' : 'Subscribe to Calendar'}
+            </button>
+            <a className="btn btn--copper" href="#submit-an-event">Submit an Event</a>
+          </div>
         </div>
       </section>
 
       <section className="calendar-section">
         <div className="calendar-section__inner">
+          {subscriptionOpen && calendarFeedUrl && (
+            <CalendarSubscription feedUrl={calendarFeedUrl} onClose={() => setSubscriptionOpen(false)} />
+          )}
+
           <div className="calendar-intro">
             <div>
               <p className="section-label">Plan Something LoveLee</p>

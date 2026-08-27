@@ -1427,6 +1427,32 @@ main > section:not(.hero):not(.page-hero) {
   margin-bottom: 0.4rem;
 }
 
+.calendar-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.calendar-hero__actions .btn--ghost {
+  border-color: var(--cream);
+  background: var(--cream);
+  color: var(--forest);
+}
+
+.calendar-hero__actions .btn--ghost:hover,
+.calendar-hero__actions .btn--ghost:focus-visible {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--charcoal);
+}
+
+.calendar-hero__actions .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 .calendar-section {
   padding: clamp(4rem, 8vw, 7rem) 0;
   background: var(--paper);
@@ -1436,6 +1462,149 @@ main > section:not(.hero):not(.page-hero) {
 .event-submit__inner {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
+}
+
+.calendar-subscription {
+  scroll-margin-top: 100px;
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--border);
+  border-top: 5px solid var(--moss);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(216, 164, 81, 0.17), transparent 14rem),
+    var(--cream);
+  box-shadow: 0 20px 55px rgba(32, 38, 32, 0.1);
+}
+
+.calendar-subscription__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.calendar-subscription__heading .section-label {
+  margin-bottom: 0.5rem;
+}
+
+.calendar-subscription__heading h2 {
+  margin: 0;
+  color: var(--charcoal);
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.05;
+}
+
+.calendar-subscription__heading p:last-child {
+  max-width: 760px;
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+}
+
+.calendar-subscription__close {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--forest);
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.calendar-subscription__close:hover,
+.calendar-subscription__close:focus-visible {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: var(--cream);
+}
+
+.calendar-subscription__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.4rem;
+}
+
+.calendar-subscription__actions .btn {
+  min-height: 44px;
+  padding-block: 0.6rem;
+  font-size: 0.82rem;
+}
+
+.calendar-subscription__url {
+  display: block;
+  margin-top: 1.4rem;
+  color: var(--forest);
+  font-family: var(--condensed);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.calendar-subscription__url-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  margin-top: 0.4rem;
+}
+
+.calendar-subscription__url-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  outline: none;
+  background: var(--paper);
+  color: var(--charcoal);
+  font: inherit;
+}
+
+.calendar-subscription__url-row input:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px rgba(73, 107, 59, 0.12);
+}
+
+.calendar-subscription__url-row button {
+  min-width: 78px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--forest);
+  font-family: var(--condensed);
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.calendar-subscription__url-row button:hover,
+.calendar-subscription__url-row button:focus-visible {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: var(--cream);
+}
+
+.calendar-subscription__status,
+.calendar-subscription__help {
+  margin: 0.7rem 0 0;
+  font-size: 0.82rem;
+}
+
+.calendar-subscription__status {
+  color: var(--moss);
+  font-weight: 600;
+}
+
+.calendar-subscription__help {
+  max-width: 860px;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .calendar-intro {
@@ -2188,6 +2357,15 @@ main > section:not(.hero):not(.page-hero) {
     margin: 0;
   }
 
+  .calendar-hero__actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .calendar-hero__actions .btn {
+    width: 100%;
+  }
+
   .calendar-section,
   .event-submit {
     padding: 3.2rem 0;
@@ -2200,6 +2378,30 @@ main > section:not(.hero):not(.page-hero) {
 
   .calendar-intro {
     gap: 1rem;
+  }
+
+  .calendar-subscription {
+    padding: 1.1rem;
+  }
+
+  .calendar-subscription__heading {
+    gap: 1rem;
+  }
+
+  .calendar-subscription__actions {
+    display: grid;
+  }
+
+  .calendar-subscription__actions .btn {
+    width: 100%;
+  }
+
+  .calendar-subscription__url-row {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-subscription__url-row button {
+    min-height: 42px;
   }
 
   .calendar-filters {
