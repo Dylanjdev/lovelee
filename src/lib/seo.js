@@ -44,6 +44,13 @@ export const seoPages = [
     index: true,
   },
   {
+    path: '/cumberland-gap-national-historical-park-guide',
+    label: 'Cumberland Gap National Historical Park Guide',
+    title: 'Cumberland Gap National Historical Park Guide | LoveLeeVa',
+    description: 'Plan a Cumberland Gap visit with scenic overlooks, hiking trails, historic sites, travel tips, and local stops in Lee County, Virginia.',
+    index: true,
+  },
+  {
     path: '/shop',
     label: 'Shop',
     title: 'Handmade Goods & Local Products in Virginia | LoveLeeVa',

@@ -15,8 +15,8 @@ const highlights = [
     label: 'Mountain Gateway',
     title: 'Cumberland Gap',
     body: 'Explore the historic mountain passage where Virginia, Kentucky, and Tennessee meet. The national park offers overlooks, trails, visitor information, and deeper routes into Appalachian natural and cultural history.',
-    href: 'https://www.nps.gov/cuga/',
-    cta: 'Plan with the National Park Service',
+    to: '/cumberland-gap-national-historical-park-guide/',
+    cta: 'Read the Cumberland Gap guide',
   },
   {
     number: '03',

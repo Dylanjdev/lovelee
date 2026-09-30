@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import scraper1 from '../assets/scraper1.PNG'
+import scraper2 from '../assets/scraper2.PNG'
+import scraper3 from '../assets/scraper3.JPEG'
+import scraper4 from '../assets/scraper4.PNG'
+import scraper5 from '../assets/scraper5.PNG'
 import ProductVisual from '../components/ProductVisual.jsx'
 import StripePaymentForm from '../components/StripePaymentForm.jsx'
 import { useCart } from '../lib/cartContext.js'
@@ -10,7 +15,7 @@ import {
   readPendingCheckoutPayment,
   rememberPendingCheckoutPayment,
 } from '../lib/checkoutCompletion.js'
-import { formatMoney } from '../lib/products.js'
+import { formatMoney, isRandomizedScraperProduct } from '../lib/products.js'
 
 const customerSafeErrorCodes = new Set([
   'invalid_address',
@@ -34,12 +39,16 @@ const quoteFieldNames = new Set([
 
 const requiredQuoteFieldNames = [...quoteFieldNames].filter((name) => name !== 'addressTwo')
 const automaticQuoteDelay = 1_000
+const scraperSlideDelay = 3_200
+const scraperSlides = [scraper1, scraper2, scraper3, scraper4, scraper5]
 
 export default function Checkout() {
   const { products } = useCatalog()
   const { items, itemCount, subtotal, addItem, clearCart } = useCart()
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true)
   const [scraperUpsellDismissed, setScraperUpsellDismissed] = useState(false)
+  const [scraperSlideIndex, setScraperSlideIndex] = useState(0)
+  const [scraperSlideshowPaused, setScraperSlideshowPaused] = useState(false)
   const [pricingTest, setPricingTest] = useState({
     status: 'idle',
     message: '',
@@ -60,10 +69,7 @@ export default function Checkout() {
   const quoteRequestIdRef = useRef(0)
   const scraperUpsellButtonRef = useRef(null)
 
-  const scraperUpsellProduct = products.find((product) => (
-    Math.abs(product.price - 7) < 0.001
-    && /(?:scraper|scarper)/i.test(product.name)
-  ))
+  const scraperUpsellProduct = products.find(isRandomizedScraperProduct)
   const cartHasScraper = items.some((item) => item.product.id === scraperUpsellProduct?.id)
   const showScraperUpsell = Boolean(
     !scraperUpsellDismissed
@@ -164,6 +170,20 @@ export default function Checkout() {
       previouslyFocusedElement?.focus?.()
     }
   }, [showScraperUpsell])
+
+  useEffect(() => {
+    if (
+      !showScraperUpsell
+      || scraperSlideshowPaused
+      || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) return undefined
+
+    const intervalId = window.setInterval(() => {
+      setScraperSlideIndex((currentIndex) => (currentIndex + 1) % scraperSlides.length)
+    }, scraperSlideDelay)
+
+    return () => window.clearInterval(intervalId)
+  }, [scraperSlideshowPaused, showScraperUpsell])
 
   function quoteFieldsAreReady(form) {
     return requiredQuoteFieldNames.every((name) => {
@@ -427,11 +447,47 @@ export default function Checkout() {
             >
               ×
             </button>
-            <ProductVisual
-              product={scraperUpsellProduct}
-              className="checkout-upsell__visual"
-              eager
-            />
+            <div
+              className="checkout-upsell__slideshow"
+              role="group"
+              aria-label="Examples of handmade board scrapers"
+            >
+              <div
+                className="checkout-upsell__slideshow-track"
+                style={{ '--scraper-slide-index': scraperSlideIndex }}
+              >
+                {scraperSlides.map((scraperImage, index) => (
+                  <img
+                    key={scraperImage}
+                    src={scraperImage}
+                    alt={`Handmade board scraper example ${index + 1}`}
+                    aria-hidden={index !== scraperSlideIndex}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    draggable="false"
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                className="checkout-upsell__slideshow-toggle"
+                aria-label={scraperSlideshowPaused ? 'Play scraper slideshow' : 'Pause scraper slideshow'}
+                onClick={() => setScraperSlideshowPaused((isPaused) => !isPaused)}
+              >
+                {scraperSlideshowPaused ? 'Play' : 'Pause'}
+              </button>
+              <div className="checkout-upsell__slideshow-dots" aria-label="Choose a scraper example">
+                {scraperSlides.map((scraperImage, index) => (
+                  <button
+                    key={scraperImage}
+                    type="button"
+                    aria-label={`Show scraper example ${index + 1}`}
+                    aria-current={index === scraperSlideIndex ? 'true' : undefined}
+                    onClick={() => setScraperSlideIndex(index)}
+                  />
+                ))}
+              </div>
+            </div>
             <div className="checkout-upsell__content">
               <p className="section-label">A little something extra</p>
               <h2 id="scraper-upsell-title">Do you want a randomized scraper for $7?</h2>

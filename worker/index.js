@@ -108,7 +108,7 @@ function mapProduct(product) {
     categoryLabel: relationName(product.categ_id, 'LoveLeeVA Goods'),
     description: product.description_sale || '',
     hasImage: Boolean(product.image_128),
-    imageUrl: product.image_128 ? `/api/products/${product.id}/image` : null,
+    imageUrl: product.image_128 ? `/api/products/${product.id}/image?v=1920` : null,
   }
 }
 
@@ -205,11 +205,11 @@ async function getProductImage(env, productId) {
       'type',
       'default_code',
       'categ_id',
-      'image_256',
+      'image_1920',
     ],
   })
   const product = records[0]
-  const encodedImage = product?.image_256
+  const encodedImage = product?.image_1920
 
   if (!isStorefrontProduct(product) || !encodedImage || typeof encodedImage !== 'string') {
     return jsonResponse({ error: 'Product image not found.' }, { status: 404 })
@@ -225,8 +225,8 @@ async function getProductImage(env, productId) {
   const optimizedImage = (
     await env.IMAGES
       .input(imageStream)
-      .transform({ width: 640 })
-      .output({ format: 'image/webp', quality: 80 })
+      .transform({ width: 1280, fit: 'scale-down' })
+      .output({ format: 'image/webp', quality: 90 })
   ).response()
 
   return new Response(optimizedImage.body, {

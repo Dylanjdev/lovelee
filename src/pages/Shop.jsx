@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import ProductVisual from '../components/ProductVisual.jsx'
 import { useCart } from '../lib/cartContext.js'
 import { useCatalog } from '../lib/catalogContext.js'
-import { formatMoney } from '../lib/products.js'
+import { formatMoney, isRandomizedScraperProduct } from '../lib/products.js'
 
 const materialFilters = [
   { value: 'walnut', label: 'Walnut', pattern: /walnut/i },
@@ -24,18 +24,22 @@ export default function Shop() {
   const imageTriggerRef = useRef(null)
   const { addItem, getItemQuantity } = useCart()
   const { products, status, error, refreshCatalog } = useCatalog()
+  const shopProducts = useMemo(
+    () => products.filter((product) => !isRandomizedScraperProduct(product)),
+    [products],
+  )
 
   const availableMaterials = useMemo(
     () => materialFilters.flatMap((material) => {
-      const count = products.filter((product) => material.pattern.test(product.name)).length
+      const count = shopProducts.filter((product) => material.pattern.test(product.name)).length
       return count ? [{ ...material, count }] : []
     }),
-    [products],
+    [shopProducts],
   )
 
   const visibleProducts = useMemo(() => {
     const activeFilter = materialFilters.find((material) => material.value === activeMaterial)
-    const filteredProducts = products.filter((product) => (
+    const filteredProducts = shopProducts.filter((product) => (
       (!activeFilter || activeFilter.pattern.test(product.name))
       && (!inStockOnly || product.inventoryCount > 0)
     ))
@@ -53,12 +57,12 @@ export default function Shop() {
     }
 
     return filteredProducts
-  }, [activeMaterial, inStockOnly, products, sortBy])
+  }, [activeMaterial, inStockOnly, shopProducts, sortBy])
 
   const heroProduct = useMemo(
-    () => products.find((product) => product.image && /board|\bbd\b/i.test(product.name))
-      || products.find((product) => product.image),
-    [products],
+    () => shopProducts.find((product) => product.image && /board|\bbd\b/i.test(product.name))
+      || shopProducts.find((product) => product.image),
+    [shopProducts],
   )
 
   const activeImageQuantity = activeImageProduct
@@ -193,7 +197,7 @@ export default function Shop() {
                         aria-pressed={activeMaterial === 'all'}
                         onClick={() => setActiveMaterial('all')}
                       >
-                        All pieces <span>{products.length}</span>
+                        All pieces <span>{shopProducts.length}</span>
                       </button>
                       {availableMaterials.map((material) => (
                         <button

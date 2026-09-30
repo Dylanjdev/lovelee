@@ -27,6 +27,11 @@ subscription controls derive the live iCalendar feed URL from
 `VITE_SUPABASE_URL`, so no additional key is required. Set
 `VITE_CALENDAR_FEED_URL` only if the feed is moved to a custom domain.
 
+The calendar also accepts CSV uploads of up to 100 events. Run
+[`supabase/calendar_bulk_import.sql`](supabase/calendar_bulk_import.sql) once in
+the shared Supabase project's SQL Editor to install the atomic bulk-submission
+RPC. The migration is safe to rerun when updating an existing installation.
+
 For local checkout testing, add Stripe test keys and the Odoo RPC key to
 `.env.local`:
 

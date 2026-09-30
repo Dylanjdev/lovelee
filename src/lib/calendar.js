@@ -99,3 +99,32 @@ export async function submitCalendarEvent(values) {
 
   return readResponse(response)
 }
+
+export async function submitCalendarEvents(events, contact) {
+  requireConfiguration()
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/submit_calendar_events`, {
+    method: 'POST',
+    headers: {
+      ...authHeaders,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      p_events: events.map((event) => ({
+        title: event.title,
+        description: event.description,
+        start_at: event.startAt,
+        end_at: event.endAt,
+        all_day: event.allDay,
+        location_name: event.locationName,
+        address: event.address,
+        website_url: event.websiteUrl,
+        category: event.category,
+      })),
+      p_submitter_name: contact.submitterName,
+      p_submitter_email: contact.submitterEmail,
+    }),
+  })
+
+  return readResponse(response)
+}

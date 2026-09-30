@@ -18,6 +18,7 @@
 - [Workforce Development](https://loveleeva.com/workforce-development/): Local workforce resources.
 - [Explore Lee County](https://loveleeva.com/explore-lee-county/): Visitor and community highlights.
 - [Lee County Guide](https://loveleeva.com/lee-county-virginia-guide/): Guide to Lee County, Virginia.
+- [Cumberland Gap Guide](https://loveleeva.com/cumberland-gap-national-historical-park-guide/): Visitor guide to overlooks, trails, historic sites, and nearby Lee County stops at Cumberland Gap National Historical Park.
 
 ## Policies
 

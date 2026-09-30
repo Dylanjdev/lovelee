@@ -50,6 +50,14 @@ export function createProductCategories(products) {
   ]
 }
 
+export function isRandomizedScraperProduct(product) {
+  return Boolean(
+    product
+    && Math.abs(Number(product.price) - 7) < 0.001
+    && /(?:scraper|scarper)/i.test(String(product.name || '')),
+  )
+}
+
 export function formatMoney(value, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

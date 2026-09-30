@@ -6,7 +6,7 @@ export default function ProductVisual({ product, className = '', eager = false }
 
   return (
     <div
-      className={`product-visual product-visual--${product.tone}${className ? ` ${className}` : ''}`}
+      className={`product-visual product-visual--${product.tone}${showImage ? ' product-visual--image' : ''}${className ? ` ${className}` : ''}`}
       aria-hidden={showImage ? undefined : 'true'}
     >
       {showImage ? (

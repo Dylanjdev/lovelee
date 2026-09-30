@@ -5,7 +5,9 @@ import {
   getPublishedEvents,
   isCalendarConfigured,
   submitCalendarEvent,
+  submitCalendarEvents,
 } from '../lib/calendar.js'
+import { EVENT_CSV_HEADERS, parseEventCsv } from '../lib/eventCsv.js'
 
 const calendarTimeZone = 'America/New_York'
 const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -19,6 +21,8 @@ const categories = [
   'Government',
   'Other',
 ]
+const maxBulkEvents = 100
+const maxCsvFileBytes = 2 * 1024 * 1024
 
 const CalendarMarkIcon = () => (
   <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -99,6 +103,73 @@ function zonedDateTimeToIso(dateValue, timeValue = '00:00') {
   let result = new Date(utcGuess.getTime() - getOffset(utcGuess))
   result = new Date(utcGuess.getTime() - getOffset(result))
   return result.toISOString()
+}
+
+function normalizeWebsiteUrl(value) {
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return null
+
+  const candidate = /^https?:\/\//i.test(trimmedValue) ? trimmedValue : `https://${trimmedValue}`
+
+  try {
+    const url = new URL(candidate)
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error()
+    return url.href
+  } catch {
+    throw new Error('Enter a valid event website.')
+  }
+}
+
+function csvEventToSubmission(event) {
+  if (!event.all_day && !event.start_time) {
+    throw new Error('Enter an event start time.')
+  }
+  if (!event.all_day && Boolean(event.end_date) !== Boolean(event.end_time)) {
+    throw new Error('Enter both an end date and end time, or leave both blank.')
+  }
+
+  const startAt = zonedDateTimeToIso(
+    event.start_date,
+    event.all_day ? '00:00' : event.start_time,
+  )
+  let endAt = null
+
+  if (event.all_day && event.end_date) {
+    endAt = zonedDateTimeToIso(addDaysToDateInput(event.end_date, 1), '00:00')
+  } else if (!event.all_day && event.end_date && event.end_time) {
+    endAt = zonedDateTimeToIso(event.end_date, event.end_time)
+  }
+
+  if (endAt && new Date(endAt) <= new Date(startAt)) {
+    throw new Error('The event end must be after its start.')
+  }
+
+  return {
+    title: event.title.trim(),
+    description: event.description.trim() || null,
+    startAt,
+    endAt,
+    allDay: event.all_day,
+    locationName: event.location_name.trim() || null,
+    address: event.address.trim() || null,
+    websiteUrl: normalizeWebsiteUrl(event.website_url),
+    category: event.category,
+  }
+}
+
+function formatCsvSchedule(event) {
+  if (event.all_day) {
+    return event.end_date && event.end_date !== event.start_date
+      ? `${event.start_date} – ${event.end_date} · All day`
+      : `${event.start_date} · All day`
+  }
+
+  const start = `${event.start_date} at ${event.start_time}`
+  if (!event.end_date) return start
+  if (event.end_date === event.start_date) {
+    return event.end_time ? `${start}–${event.end_time}` : start
+  }
+  return `${start} – ${event.end_date}${event.end_time ? ` at ${event.end_time}` : ''}`
 }
 
 function getCalendarDays(monthDate) {
@@ -289,6 +360,10 @@ export default function Calendar() {
   const [category, setCategory] = useState('All')
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [allDay, setAllDay] = useState(false)
+  const [submissionMode, setSubmissionMode] = useState('single')
+  const [csvEvents, setCsvEvents] = useState([])
+  const [csvErrors, setCsvErrors] = useState([])
+  const [csvFileName, setCsvFileName] = useState('')
   const [submitStatus, setSubmitStatus] = useState('idle')
   const [submitMessage, setSubmitMessage] = useState('')
   const [subscriptionOpen, setSubscriptionOpen] = useState(false)
@@ -367,10 +442,104 @@ export default function Calendar() {
     return groupedEvents
   }, [filteredEvents])
 
+  function changeSubmissionMode(mode) {
+    setSubmissionMode(mode)
+    setSubmitStatus('idle')
+    setSubmitMessage('')
+  }
+
+  async function handleCsvFile(changeEvent) {
+    const [file] = changeEvent.target.files
+    setCsvEvents([])
+    setCsvErrors([])
+    setCsvFileName(file?.name ?? '')
+    setSubmitStatus('idle')
+    setSubmitMessage('')
+
+    if (!file) return
+    if (file.size > maxCsvFileBytes) {
+      setCsvErrors(['The CSV file must be 2 MB or smaller.'])
+      return
+    }
+
+    try {
+      const parsed = parseEventCsv(await file.text(), {
+        categories,
+        maxEvents: maxBulkEvents,
+      })
+      const validatedEvents = []
+      const validationErrors = [...parsed.errors]
+
+      parsed.events.forEach((csvEvent) => {
+        try {
+          csvEventToSubmission(csvEvent)
+          validatedEvents.push(csvEvent)
+        } catch (validationError) {
+          validationErrors.push(`Row ${csvEvent.csv_row}: ${validationError.message}`)
+        }
+      })
+
+      setCsvEvents(validatedEvents)
+      setCsvErrors(validationErrors)
+    } catch (fileError) {
+      setCsvErrors([fileError.message || 'The CSV file could not be read.'])
+    }
+  }
+
   async function handleSubmit(submitEvent) {
     submitEvent.preventDefault()
     const form = submitEvent.currentTarget
     const formData = new FormData(form)
+
+    if (formData.get('company')) {
+      form.reset()
+      setAllDay(false)
+      setCsvEvents([])
+      setCsvErrors([])
+      setCsvFileName('')
+      setSubmitStatus('success')
+      setSubmitMessage('Thank you! Your events were submitted successfully and will appear after review.')
+      return
+    }
+
+    if (submissionMode === 'csv') {
+      if (csvErrors.length > 0) {
+        setSubmitStatus('error')
+        setSubmitMessage('Fix the CSV errors and upload the file again before submitting.')
+        return
+      }
+      if (csvEvents.length === 0) {
+        setSubmitStatus('error')
+        setSubmitMessage('Choose a CSV file containing at least one event.')
+        return
+      }
+
+      setSubmitStatus('submitting')
+      setSubmitMessage('')
+
+      try {
+        const eventCount = csvEvents.length
+        await submitCalendarEvents(
+          csvEvents.map(csvEventToSubmission),
+          {
+            submitterName: formData.get('submitterName'),
+            submitterEmail: formData.get('submitterEmail'),
+          },
+        )
+
+        form.reset()
+        setCsvEvents([])
+        setCsvErrors([])
+        setCsvFileName('')
+        setSubmitStatus('success')
+        setSubmitMessage(`${eventCount} events were submitted successfully and will appear on the calendar after review and approval.`)
+      } catch (error) {
+        setSubmitStatus('error')
+        setSubmitMessage(error.message || 'Your events could not be submitted. Please try again.')
+      }
+      return
+    }
+
     const startDate = formData.get('startDate')
     const startTime = formData.get('startTime')
     const endDate = formData.get('endDate')
@@ -452,7 +621,7 @@ export default function Calendar() {
             >
               {subscriptionOpen ? 'Close Subscription' : 'Subscribe to Calendar'}
             </button>
-            <a className="btn btn--copper" href="#submit-an-event">Submit an Event</a>
+            <a className="btn btn--copper" href="#submit-an-event">Submit Events</a>
           </div>
         </div>
       </section>
@@ -561,16 +730,37 @@ export default function Calendar() {
         <div className="event-submit__inner">
           <div className="event-submit__heading">
             <p className="section-label">Share What&rsquo;s Happening</p>
-            <h2 className="section-heading">Add your event.</h2>
-            <p className="section-copy">Hosting something in Lee County? Send us the details for free. Your event will be reviewed before it appears publicly on the calendar.</p>
+            <h2 className="section-heading">Add your events.</h2>
+            <p className="section-copy">Hosting something in Lee County? Enter one event or upload a CSV spreadsheet with up to {maxBulkEvents} events. Every submission is reviewed before it appears publicly.</p>
             <div className="event-submit__note">
               <CalendarMarkIcon />
-              <p><strong>Good to know</strong><span>Submit each event once. We&rsquo;ll use your private contact details only if we have a question.</span></p>
+              <p><strong>Good to know</strong><span>Download the CSV template for a full schedule. We&rsquo;ll use your private contact details only if we have a question.</span></p>
             </div>
           </div>
 
           <form className="event-form" onSubmit={handleSubmit}>
-            <div className="event-form__row">
+            <div className="event-form__modes" role="group" aria-label="Event submission method">
+              <button
+                type="button"
+                className={submissionMode === 'single' ? 'event-form__mode event-form__mode--active' : 'event-form__mode'}
+                aria-pressed={submissionMode === 'single'}
+                onClick={() => changeSubmissionMode('single')}
+              >
+                Enter One Event
+              </button>
+              <button
+                type="button"
+                className={submissionMode === 'csv' ? 'event-form__mode event-form__mode--active' : 'event-form__mode'}
+                aria-pressed={submissionMode === 'csv'}
+                onClick={() => changeSubmissionMode('csv')}
+              >
+                Upload CSV
+              </button>
+            </div>
+
+            {submissionMode === 'single' && (
+              <>
+                <div className="event-form__row">
               <div className="contact-form__field">
                 <label htmlFor="event-title">Event title</label>
                 <input id="event-title" name="title" type="text" maxLength="120" required />
@@ -633,6 +823,86 @@ export default function Calendar() {
               <label htmlFor="event-website">Event website <span>(optional)</span></label>
               <input id="event-website" name="websiteUrl" type="url" maxLength="500" inputMode="url" placeholder="https://example.com/event" />
             </div>
+              </>
+            )}
+
+            {submissionMode === 'csv' && (
+              <section className="event-csv" aria-labelledby="event-csv-title">
+                <div className="event-csv__heading">
+                  <div>
+                    <h3 id="event-csv-title">Upload your event spreadsheet</h3>
+                    <p>
+                      The template includes an example row—replace or delete it before submitting.
+                      Keep the headers unchanged. Dates may use YYYY-MM-DD or M/D/YYYY, and times
+                      may use 18:30 or 6:30 PM.
+                    </p>
+                  </div>
+                  <a
+                    className="btn btn--ghost"
+                    href={`${import.meta.env.BASE_URL}event-upload-template.csv`}
+                    download
+                  >
+                    Download CSV Template
+                  </a>
+                </div>
+
+                <p className="event-csv__columns">
+                  <strong>Columns:</strong> {EVENT_CSV_HEADERS.join(', ')}
+                </p>
+
+                <label className="event-csv__file">
+                  <span>Choose CSV file</span>
+                  <input type="file" accept=".csv,text/csv" onChange={handleCsvFile} />
+                  <small>Maximum {maxBulkEvents} events and 2 MB.</small>
+                </label>
+
+                {csvErrors.length > 0 && (
+                  <div className="event-csv__errors" role="alert">
+                    <strong>{csvFileName || 'CSV'} could not be submitted:</strong>
+                    <ul>
+                      {csvErrors.map((csvError) => <li key={csvError}>{csvError}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {csvEvents.length > 0 && (
+                  <div className="event-csv__preview">
+                    <div className="event-csv__preview-heading">
+                      <div>
+                        <strong>{csvFileName}</strong>
+                        <span>{csvEvents.length} event{csvEvents.length === 1 ? '' : 's'} ready</span>
+                      </div>
+                      {csvErrors.length === 0 && <span className="event-csv__ready">Ready to submit</span>}
+                    </div>
+                    <div className="event-csv__table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th scope="col">Row</th>
+                            <th scope="col">Event</th>
+                            <th scope="col">Schedule</th>
+                            <th scope="col">Category</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {csvEvents.map((csvEvent) => (
+                            <tr key={csvEvent.csv_row}>
+                              <td>{csvEvent.csv_row}</td>
+                              <td>
+                                <strong>{csvEvent.title}</strong>
+                                {csvEvent.location_name && <span>{csvEvent.location_name}</span>}
+                              </td>
+                              <td>{formatCsvSchedule(csvEvent)}</td>
+                              <td>{csvEvent.category}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
 
             <fieldset className="event-form__contact">
               <legend>Your private contact details</legend>
@@ -648,8 +918,25 @@ export default function Calendar() {
               </div>
             </fieldset>
 
-            <button className="btn btn--primary" type="submit" disabled={submitStatus === 'submitting' || !isCalendarConfigured}>
-              {submitStatus === 'submitting' ? 'Submitting…' : 'Submit Event'}
+            <label className="event-form__honeypot" aria-hidden="true">
+              Company
+              <input name="company" type="text" tabIndex="-1" autoComplete="off" />
+            </label>
+
+            <button
+              className="btn btn--primary"
+              type="submit"
+              disabled={
+                submitStatus === 'submitting'
+                || !isCalendarConfigured
+                || (submissionMode === 'csv' && (csvEvents.length === 0 || csvErrors.length > 0))
+              }
+            >
+              {submitStatus === 'submitting'
+                ? 'Submitting…'
+                : submissionMode === 'csv'
+                  ? `Submit ${csvEvents.length} Event${csvEvents.length === 1 ? '' : 's'}`
+                  : 'Submit Event'}
             </button>
             {submitMessage && (
               <p className={`event-form__message event-form__message--${submitStatus}`} role={submitStatus === 'error' ? 'alert' : 'status'}>
