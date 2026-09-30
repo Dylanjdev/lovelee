@@ -27,8 +27,8 @@ const page = {
     {
       title: 'Plan a Mountain Road Trip',
       description: 'Build a route through Southwest Virginia, eastern Kentucky, and Northeast Tennessee with time for overlooks, historic places, local meals, and an unhurried drive.',
-      link: '/directory/',
-      cta: 'Find local stops',
+      link: '/southwest-virginia-road-trip-guide/',
+      cta: 'Follow the road trip guide',
     },
     {
       title: 'Follow Appalachian History',

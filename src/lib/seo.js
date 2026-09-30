@@ -51,6 +51,13 @@ export const seoPages = [
     index: true,
   },
   {
+    path: '/southwest-virginia-road-trip-guide',
+    label: 'Southwest Virginia Road Trip Guide',
+    title: 'Southwest Virginia Road Trip Guide | LoveLeeVa',
+    description: 'Plan a two-day Southwest Virginia road trip through Lee County with stops at Wilderness Road, Cumberland Gap, Jonesville, and Pennington Gap.',
+    index: true,
+  },
+  {
     path: '/shop',
     label: 'Shop',
     title: 'Handmade Goods & Local Products in Virginia | LoveLeeVa',

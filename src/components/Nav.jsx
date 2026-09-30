@@ -95,7 +95,7 @@ export default function Nav() {
             <li className={`nav__dropdown${isGuideOpen ? ' nav__dropdown--open' : ''}`}>
               <button
                 type="button"
-                className={`nav__link nav__dropdown-toggle${location.pathname.startsWith('/lee-county-virginia-guide') || location.pathname.startsWith('/cumberland-gap-national-historical-park-guide') || location.pathname.startsWith('/explore-lee-county') ? ' nav__link--active' : ''}`}
+                className={`nav__link nav__dropdown-toggle${location.pathname.startsWith('/lee-county-virginia-guide') || location.pathname.startsWith('/cumberland-gap-national-historical-park-guide') || location.pathname.startsWith('/southwest-virginia-road-trip-guide') || location.pathname.startsWith('/explore-lee-county') ? ' nav__link--active' : ''}`}
                 aria-expanded={isGuideOpen}
                 aria-controls="local-guide-menu"
                 onClick={() => setIsGuideOpen((isOpen) => !isOpen)}
@@ -105,6 +105,7 @@ export default function Nav() {
               <ul id="local-guide-menu" className="nav__dropdown-menu">
                 <li><NavLink to="/lee-county-virginia-guide/" onClick={() => { setIsMenuOpen(false); setIsGuideOpen(false) }} className={({ isActive }) => isActive ? 'nav__dropdown-link nav__dropdown-link--active' : 'nav__dropdown-link'}>Lee County Guide</NavLink></li>
                 <li><NavLink to="/cumberland-gap-national-historical-park-guide/" onClick={() => { setIsMenuOpen(false); setIsGuideOpen(false) }} className={({ isActive }) => isActive ? 'nav__dropdown-link nav__dropdown-link--active' : 'nav__dropdown-link'}>Cumberland Gap Guide</NavLink></li>
+                <li><NavLink to="/southwest-virginia-road-trip-guide/" onClick={() => { setIsMenuOpen(false); setIsGuideOpen(false) }} className={({ isActive }) => isActive ? 'nav__dropdown-link nav__dropdown-link--active' : 'nav__dropdown-link'}>SWVA Road Trip</NavLink></li>
                 <li><NavLink to="/explore-lee-county/" onClick={() => { setIsMenuOpen(false); setIsGuideOpen(false) }} className={({ isActive }) => isActive ? 'nav__dropdown-link nav__dropdown-link--active' : 'nav__dropdown-link'}>Tourism in Lee County</NavLink></li>
               </ul>
             </li>

@@ -108,6 +108,10 @@ export default function Shop() {
               <a href="#collection" className="btn btn--primary">Shop the collection</a>
               <Link to="/customized/" className="btn btn--ghost">Explore custom work</Link>
             </div>
+            <div className="shop-hero__edition" aria-label="About the collection">
+              <p><span>Origin</span><strong>Lee County, Virginia</strong></p>
+              <p><span>Character</span><strong>Small batch &amp; one of a kind</strong></p>
+            </div>
           </div>
 
           <div className="shop-hero__feature" aria-label="A featured piece from the collection">
@@ -238,92 +242,130 @@ export default function Shop() {
                 </div>
               </div>
 
-              <div className="shop__grid">
-                {visibleProducts.map((product) => {
-                  const quantityInCart = getItemQuantity(product.id)
-                  const isSoldOut = product.inventoryCount <= 0
-                  const isAtLimit = quantityInCart >= product.inventoryCount
+              {visibleProducts.length ? (
+                <div className="shop__grid">
+                  {visibleProducts.map((product, index) => {
+                    const quantityInCart = getItemQuantity(product.id)
+                    const isSoldOut = product.inventoryCount <= 0
+                    const isAtLimit = quantityInCart >= product.inventoryCount
 
-                  return (
-                    <article className="product-card" key={product.id}>
-                      <button
-                        type="button"
-                        className="product-card__visual-button"
-                        aria-label={`View ${product.name}`}
-                        onClick={(event) => {
-                          imageTriggerRef.current = event.currentTarget
-                          setActiveImageProduct(product)
-                        }}
-                      >
-                        <ProductVisual product={product} className="product-card__visual" />
-                        {product.badge ? <span className="product-card__badge">{product.badge}</span> : null}
-                        <span className="product-card__view">View piece</span>
-                      </button>
-                      <div className="product-card__body">
-                        <div className="product-card__meta">
-                          <p className="product-card__category">{product.categoryLabel}</p>
-                          <span className={isSoldOut ? 'product-card__stock product-card__stock--out' : 'product-card__stock'}>
-                            {isSoldOut ? 'Sold out' : 'In stock'}
+                    return (
+                      <article className="product-card" key={product.id}>
+                        <button
+                          type="button"
+                          className="product-card__visual-button"
+                          aria-label={`View ${product.name}`}
+                          onClick={(event) => {
+                            imageTriggerRef.current = event.currentTarget
+                            setActiveImageProduct(product)
+                          }}
+                        >
+                          <ProductVisual product={product} className="product-card__visual" />
+                          {product.badge ? <span className="product-card__badge">{product.badge}</span> : null}
+                          <span className="product-card__index" aria-hidden="true">
+                            {String(index + 1).padStart(2, '0')}
                           </span>
+                          <span className="product-card__view">View piece</span>
+                        </button>
+                        <div className="product-card__body">
+                          <div className="product-card__meta">
+                            <p className="product-card__category">{product.categoryLabel}</p>
+                            <span className={isSoldOut ? 'product-card__stock product-card__stock--out' : 'product-card__stock'}>
+                              {isSoldOut ? 'Sold out' : 'In stock'}
+                            </span>
+                          </div>
+                          <div className="product-card__heading">
+                            <h3 className="product-card__title">{product.name}</h3>
+                            <strong>{formatMoney(product.price)}</strong>
+                          </div>
+                          {product.hasDescription ? (
+                            <p className="product-card__desc">{product.description}</p>
+                          ) : null}
+                          <p className="product-card__details">{product.details}</p>
+                          <div className="product-card__purchase">
+                            <button
+                              type="button"
+                              className="btn btn--primary"
+                              disabled={isAtLimit}
+                              onClick={() => addItem(product.id)}
+                            >
+                              {isSoldOut
+                                ? 'Sold out'
+                                : isAtLimit
+                                  ? 'Max in cart'
+                                  : quantityInCart
+                                    ? 'Add another'
+                                    : 'Add to cart'}
+                            </button>
+                            <span aria-live="polite">
+                              {quantityInCart
+                                ? `${quantityInCart} in cart`
+                                : isSoldOut
+                                  ? 'Currently unavailable'
+                                  : product.inventoryCount === 1
+                                    ? 'One of a kind'
+                                    : `${product.inventoryCount} available`}
+                            </span>
+                          </div>
                         </div>
-                        <div className="product-card__heading">
-                          <h3 className="product-card__title">{product.name}</h3>
-                          <strong>{formatMoney(product.price)}</strong>
-                        </div>
-                        {product.hasDescription ? (
-                          <p className="product-card__desc">{product.description}</p>
-                        ) : null}
-                        <p className="product-card__details">{product.details}</p>
-                        <div className="product-card__purchase">
-                          <button
-                            type="button"
-                            className="btn btn--primary"
-                            disabled={isAtLimit}
-                            onClick={() => addItem(product.id)}
-                          >
-                            {isSoldOut
-                              ? 'Sold out'
-                              : isAtLimit
-                                ? 'Max in cart'
-                                : quantityInCart
-                                  ? 'Add another'
-                                  : 'Add to cart'}
-                          </button>
-                          <span aria-live="polite">
-                            {quantityInCart
-                              ? `${quantityInCart} in cart`
-                              : isSoldOut
-                                ? 'Currently unavailable'
-                                : product.inventoryCount === 1
-                                  ? 'One of a kind'
-                                  : `${product.inventoryCount} available`}
-                          </span>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="shop-empty-filter" role="status">
+                  <span aria-hidden="true">✦</span>
+                  <p className="section-label">Nothing matches those filters</p>
+                  <h3>Let&rsquo;s open the collection back up.</h3>
+                  <p>Clear the current filters to see every available piece.</p>
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={() => {
+                      setActiveMaterial('all')
+                      setInStockOnly(false)
+                    }}
+                  >
+                    View all pieces
+                  </button>
+                </div>
+              )}
             </>
           )}
+
+          <div className="shop-craft">
+            <div className="shop-craft__intro">
+              <p className="section-label">From the Workbench</p>
+              <h2>Made slowly, so it can stay with you.</h2>
+              <p>
+                Each piece starts with the material itself. Grain, color, and natural
+                variation guide the final form, leaving every object with its own character.
+              </p>
+            </div>
+            <ol className="shop-craft__steps">
+              <li><span>01</span><strong>Choose</strong><p>Materials are selected for warmth, strength, and natural detail.</p></li>
+              <li><span>02</span><strong>Shape</strong><p>Small-batch methods keep the maker close to every curve and edge.</p></li>
+              <li><span>03</span><strong>Finish</strong><p>Each object is prepared for daily use, gifting, and years of stories.</p></li>
+            </ol>
+          </div>
 
           <div className="shop__story">
             <div>
               <p className="section-label">Made in Rural Virginia</p>
-              <h2>Local products for home, homesteading, and giving.</h2>
+              <h2>Local goods with a clear sense of place.</h2>
             </div>
-            <div>
+            <div className="shop__story-copy">
               <p>
-                LoveLeeVa celebrates useful, small-batch work: handmade goods with a
-                clear purpose, natural character, and a connection to Lee County. The
-                collection brings woodworking, fiber arts, homestead goods, and work
-                from local artists into one place.
+                LoveLeeVa brings together useful, small-batch work with natural character
+                and a connection to Lee County. The collection includes woodworking,
+                homestead goods, and work from local artists and makers.
               </p>
               <p>
-                Choosing local products helps skilled makers keep creating and gives
-                residents and visitors a tangible piece of rural Virginia to use,
-                share, and remember.
+                Choosing a locally made piece supports the hands and skills behind it—and
+                gives residents and visitors something of rural Virginia to use, share,
+                and remember.
               </p>
+              <Link to="/about/">Our story <span aria-hidden="true">→</span></Link>
             </div>
           </div>
 

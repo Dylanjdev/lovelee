@@ -52,6 +52,7 @@ export default function Footer() {
             <li><Link to="/explore-lee-county/">Explore Lee County</Link></li>
             <li><Link to="/lee-county-virginia-guide/">Lee County Guide</Link></li>
             <li><Link to="/cumberland-gap-national-historical-park-guide/">Cumberland Gap Guide</Link></li>
+            <li><Link to="/southwest-virginia-road-trip-guide/">SWVA Road Trip Guide</Link></li>
           </ul>
         </nav>
         <nav className="footer__nav" aria-label="Footer navigation">

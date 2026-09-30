@@ -16,6 +16,7 @@ import WorkforceDevelopment from './pages/WorkforceDevelopment.jsx'
 import ExploreLeeCounty from './pages/ExploreLeeCounty.jsx'
 import LeeCountyGuide from './pages/LeeCountyGuide.jsx'
 import CumberlandGapGuide from './pages/CumberlandGapGuide.jsx'
+import SouthwestVirginiaRoadTripGuide from './pages/SouthwestVirginiaRoadTripGuide.jsx'
 import Privacy from './pages/Privacy.jsx'
 import Terms from './pages/Terms.jsx'
 import Cart from './pages/Cart.jsx'
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="/explore-lee-county" element={<ExploreLeeCounty />} />
               <Route path="/lee-county-virginia-guide" element={<LeeCountyGuide />} />
               <Route path="/cumberland-gap-national-historical-park-guide" element={<CumberlandGapGuide />} />
+              <Route path="/southwest-virginia-road-trip-guide" element={<SouthwestVirginiaRoadTripGuide />} />
               <Route path="/privacy-policy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="*" element={<NotFound />} />

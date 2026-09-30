@@ -4388,6 +4388,32 @@ main > section:not(.hero):not(.page-hero) {
   max-width: 980px;
 }
 
+.page-hero--southwest-virginia-road-trip-guide {
+  background:
+    linear-gradient(180deg, transparent 56%, rgba(15, 36, 25, 0.44)),
+    radial-gradient(ellipse at 82% 90%, rgba(145, 75, 46, 0.48), transparent 34%),
+    linear-gradient(135deg, #234a34, #172c22 68%, #352f25);
+}
+
+.page-hero--southwest-virginia-road-trip-guide::before {
+  position: absolute;
+  right: -4%;
+  bottom: -35%;
+  width: 62%;
+  height: 78%;
+  border-radius: 50% 50% 0 0;
+  background: rgba(73, 107, 59, 0.4);
+  box-shadow:
+    -12rem 4rem 0 rgba(44, 82, 57, 0.42),
+    -24rem 7rem 0 rgba(33, 67, 47, 0.38);
+  content: '';
+  transform: rotate(-5deg);
+}
+
+.page-hero--southwest-virginia-road-trip-guide .page-hero__headline {
+  max-width: 880px;
+}
+
 .focus-overview,
 .focus-paths,
 .focus-faq,
